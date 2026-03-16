@@ -2888,36 +2888,6 @@ function renderQuestionario() {
         `;
     }).join('');
 }
-${testePOC.id === 'imc' && teste.valores['Peso'] && teste.valores['Altura'] ? `
-    <div class="info-box" style="margin-top: 0.75rem;">
-        ${(() => {
-            const peso = parseFloat(teste.valores['Peso']);
-            const altura = parseFloat(teste.valores['Altura']) / 100;
-            const imc = (peso / (altura * altura)).toFixed(1);
-            let classe = 'info';
-            let texto = '';
-            let emoji = '';
-            if (imc < 18.5)      { classe = 'warning'; texto = 'Baixo peso';          emoji = '⚠️'; }
-            else if (imc < 25)   { classe = 'success'; texto = 'Peso normal';          emoji = '✅'; }
-            else if (imc < 30)   { classe = 'warning'; texto = 'Excesso de peso';      emoji = '⚠️'; }
-            else if (imc < 35)   { classe = 'error';   texto = 'Obesidade grau I';     emoji = '🔴'; }
-            else if (imc < 40)   { classe = 'error';   texto = 'Obesidade grau II';    emoji = '🔴'; }
-            else                 { classe = 'error';   texto = 'Obesidade grau III';   emoji = '🔴'; }
-            // Guardar IMC calculado
-            state.currentConsulta.testes[${idx}].valores['IMC'] = imc;
-            return `
-                <div class="info-box-title">🧮 IMC Calculado: <strong>${imc} kg/m²</strong></div>
-                <div class="info-box-text">${emoji} <strong>${texto}</strong></div>
-                <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--color-text-secondary);">
-                    <span style="margin-right:1rem;">IMC &lt; 18.5 → Baixo peso</span>
-                    <span style="margin-right:1rem;">18.5–24.9 → Normal</span>
-                    <span style="margin-right:1rem;">25–29.9 → Excesso de peso</span>
-                    <span>≥ 30 → Obesidade</span>
-                </div>
-            `;
-        })()}
-    </div>
-` : ''}
 
                             <div class="form-group mt-2">
                                 <label class="form-label text-small">Observações</label>
