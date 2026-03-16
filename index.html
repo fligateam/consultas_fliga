@@ -1099,28 +1099,30 @@
         </main>
     </div>
 <div id="suplementosTab" class="tab-content">
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">💊 Gestão de Suplementos</h3>
-            <button class="btn btn-primary btn-small" onclick="novoSuplemento()">+ Novo Suplemento</button>
-        </div>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Nome</th>
-                        <th>Marca</th>
-                        <th>Utilizações</th>
-                        <th>Estado</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="suplementosTableBody"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">💊 Gestão de Suplementos</h3>
+                            <button class="btn btn-primary btn-small" onclick="novoSuplemento()">+ Novo Suplemento</button>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Marca</th>
+                                        <th>Utilizações</th>
+                                        <th>Estado</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="suplementosTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
 
+            </div>  ← fecho do adminView
+        </main>
     <!-- Modal Novo Utente -->
     <div id="novoUtenteModal" class="modal">
         <div class="modal-content">
@@ -2180,7 +2182,17 @@ state.suplementos.forEach(sup => {
                         { nome: 'SpO₂', unidade: '%', min: 95, max: 100 }
                     ],
                     ativo: true
-                }
+                },
+                {
+    id: 'imc',
+    nome: 'IMC — Índice de Massa Corporal',
+    tipo: 'antropometrico',
+    ativo: true,
+    campos: [
+        { nome: 'Peso', unidade: 'kg', min: 30, max: 250 },
+        { nome: 'Altura', unidade: 'cm', min: 100, max: 220 }
+    ]
+}
             ];
         }
 
@@ -2814,23 +2826,55 @@ function renderQuestionario() {
                             <button class="icon-btn delete" onclick="removerTestePOC(${idx})">🗑️</button>
                         </div>
                         <div>
-                            ${testePOC.campos.map((campo, campoIdx) => {
-                                const valor = teste.valores[campo.nome] || '';
-                                const interpretacao = valor ? interpretarValor(parseFloat(valor), campo.min, campo.max) : '';
-                                return `
-                                    <div class="field-row">
-                                        <div class="form-group">
-                                            <label class="form-label">${campo.nome} (${campo.unidade})</label>
-                                            <input type="number" 
-                                                   class="form-input" 
-                                                   value="${valor}"
-                                                   onchange="atualizarValorTeste(${idx}, '${campo.nome}', this.value)"
-                                                   placeholder="Min: ${campo.min}, Max: ${campo.max}">
-                                        </div>
-                                        ${interpretacao ? `<span class="badge badge-${interpretacao.classe}">${interpretacao.texto}</span>` : ''}
-                                    </div>
-                                `;
-                            }).join('')}
+${testePOC.campos.map((campo, campoIdx) => {
+    const valor = teste.valores[campo.nome] || '';
+    const interpretacao = valor ? interpretarValor(parseFloat(valor), campo.min, campo.max) : '';
+    return `
+        <div class="field-row">
+            <div class="form-group">
+                <label class="form-label">${campo.nome} (${campo.unidade})</label>
+                <input type="number" 
+                       class="form-input" 
+                       value="${valor}"
+                       onchange="atualizarValorTeste(${idx}, '${campo.nome}', this.value)"
+                       placeholder="Min: ${campo.min}, Max: ${campo.max}">
+            </div>
+            ${interpretacao ? `<span class="badge badge-${interpretacao.classe}">${interpretacao.texto}</span>` : ''}
+        </div>
+    `;
+}).join('')}
+
+${testePOC.id === 'imc' && teste.valores['Peso'] && teste.valores['Altura'] ? `
+    <div class="info-box" style="margin-top: 0.75rem;">
+        ${(() => {
+            const peso = parseFloat(teste.valores['Peso']);
+            const altura = parseFloat(teste.valores['Altura']) / 100;
+            const imc = (peso / (altura * altura)).toFixed(1);
+            let classe = 'info';
+            let texto = '';
+            let emoji = '';
+            if (imc < 18.5)      { classe = 'warning'; texto = 'Baixo peso';          emoji = '⚠️'; }
+            else if (imc < 25)   { classe = 'success'; texto = 'Peso normal';          emoji = '✅'; }
+            else if (imc < 30)   { classe = 'warning'; texto = 'Excesso de peso';      emoji = '⚠️'; }
+            else if (imc < 35)   { classe = 'error';   texto = 'Obesidade grau I';     emoji = '🔴'; }
+            else if (imc < 40)   { classe = 'error';   texto = 'Obesidade grau II';    emoji = '🔴'; }
+            else                 { classe = 'error';   texto = 'Obesidade grau III';   emoji = '🔴'; }
+            // Guardar IMC calculado
+            state.currentConsulta.testes[${idx}].valores['IMC'] = imc;
+            return `
+                <div class="info-box-title">🧮 IMC Calculado: <strong>${imc} kg/m²</strong></div>
+                <div class="info-box-text">${emoji} <strong>${texto}</strong></div>
+                <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--color-text-secondary);">
+                    <span style="margin-right:1rem;">IMC &lt; 18.5 → Baixo peso</span>
+                    <span style="margin-right:1rem;">18.5–24.9 → Normal</span>
+                    <span style="margin-right:1rem;">25–29.9 → Excesso de peso</span>
+                    <span>≥ 30 → Obesidade</span>
+                </div>
+            `;
+        })()}
+    </div>
+` : ''}
+
                             <div class="form-group mt-2">
                                 <label class="form-label text-small">Observações</label>
                                 <textarea class="form-textarea" 
@@ -3827,6 +3871,14 @@ function apagarUtilizador(operador) {
     if (!confirm(`Tens a certeza que queres apagar o utilizador "${user.nome}" (${operador})?\n\nEsta ação é irreversível.`)) return;
 
     state.utilizadores = state.utilizadores.filter(u => u.operador !== operador);
+
+    // Apagar também do Firebase diretamente
+    if (firebaseInitialized && db) {
+        db.collection('utilizadores').doc(operador).delete()
+            .then(() => console.log('✅ Utilizador apagado do Firebase'))
+            .catch(err => console.error('❌ Erro ao apagar do Firebase:', err));
+    }
+
     saveData();
     renderUtilizadores();
 }
