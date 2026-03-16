@@ -2807,7 +2807,7 @@ function renderQuestionario() {
 }
 
 
-        function renderTestesConsulta() {
+    function renderTestesConsulta() {
     const container = document.getElementById('testesContent');
     
     if (state.currentConsulta.testes.length === 0) {
@@ -2888,8 +2888,6 @@ function renderQuestionario() {
         `;
     }).join('');
 }
-
-
 ${testePOC.id === 'imc' && teste.valores['Peso'] && teste.valores['Altura'] ? `
     <div class="info-box" style="margin-top: 0.75rem;">
         ${(() => {
