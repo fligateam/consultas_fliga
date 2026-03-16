@@ -1256,6 +1256,21 @@
 <h4 class="mb-2">💊 Suplementos Recomendados</h4>
 <div id="consultaSuplemetos" class="item-list mb-3"></div>
 <button class="btn btn-secondary btn-small mb-3" onclick="adicionarSuplementoConsulta()">+ Adicionar Suplemento</button>
+                            <hr class="divider">
+<h4 class="mb-2">🧴 Cuidados Dermocosmética</h4>
+<div class="form-group">
+    <label class="form-label text-small">Rotina / Recomendações (opcional)</label>
+    <div id="dermocosmeticaEditor"
+         contenteditable="true"
+         class="form-input"
+         style="min-height: 150px; height: auto; overflow-y: auto; line-height: 1.6; white-space: pre-wrap; font-family: inherit;"
+         oninput="state.currentConsulta.dermocosmetica = this.innerHTML"
+         placeholder="Cole aqui a rotina, sugestões, símbolos ou imagens...">
+    </div>
+    <p class="text-secondary text-small" style="margin-top: 0.5rem;">
+        💡 Podes colar texto formatado, emojis e imagens diretamente neste campo.
+    </p>
+</div>
 
                             <hr class="divider">
 
@@ -2498,14 +2513,15 @@ function showAdminTab(tabName) {
         }
 
         function novaConsulta() {
-            state.currentConsulta = {
-                questionario: {},
-                testes: [],
-                suplementos: [],
-                medidas: [],
-                exames: [],
-                observacoes: '',
-                proximaConsulta: null
+state.currentConsulta = {
+    questionario: {},
+    testes: [],
+    suplementos: [],
+    medidas: [],
+    exames: [],
+    observacoes: '',
+    proximaConsulta: null,
+    dermocosmetica:
             };
 
             document.getElementById('consultaModalTitle').textContent = 'Nova Consulta';
@@ -2858,13 +2874,19 @@ function renderQuestionario() {
             }
         }
 
-        function renderGuiaConsulta() {
-            renderSuplementsConsulta();
-            renderMedidasConsulta();
-            renderExamesConsulta();
-            document.getElementById('guiaObservacoes').value = state.currentConsulta.observacoes || '';
-            document.getElementById('guiaProximaConsulta').value = state.currentConsulta.proximaConsulta || '';
-        }
+function renderGuiaConsulta() {
+    renderSuplementsConsulta(state.currentConsulta.suplementos);
+    renderMedidasConsulta();
+    renderExamesConsulta();
+    document.getElementById('guiaObservacoes').value = state.currentConsulta.observacoes || '';
+    document.getElementById('guiaProximaConsulta').value = state.currentConsulta.proximaConsulta || '';
+
+    // Carregar conteúdo dermocosmética
+    const editor = document.getElementById('dermocosmeticaEditor');
+    if (editor) {
+        editor.innerHTML = state.currentConsulta.dermocosmetica || '';
+    }
+}
 
        function renderSuplementsConsulta(suplementos) {
     const container = document.getElementById('consultaSuplemetos');
