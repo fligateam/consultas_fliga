@@ -2868,39 +2868,6 @@ function renderQuestionario() {
             `;
         }
 
-        return `
-            <div class="item-card">
-                <div class="item-header">
-                    <span class="item-title">${testePOC.nome}</span>
-                    <button class="icon-btn delete" onclick="removerTestePOC(${idx})">🗑️</button>
-                </div>
-                <div>
-                    ${camposHtml}
-                    ${imcHtml}
-                    <div class="form-group mt-2">
-                        <label class="form-label text-small">Observações</label>
-                        <textarea class="form-textarea" 
-                                  rows="2" 
-                                  onchange="state.currentConsulta.testes[${idx}].observacoes = this.value">${teste.observacoes || ''}</textarea>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-                            <div class="form-group mt-2">
-                                <label class="form-label text-small">Observações</label>
-                                <textarea class="form-textarea" 
-                                          rows="2" 
-                                          onchange="state.currentConsulta.testes[${idx}].observacoes = this.value">${teste.observacoes || ''}</textarea>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
         function interpretarValor(valor, min, max) {
             if (valor < min) return { classe: 'error', texto: '⚠️ Abaixo do normal' };
             if (valor > max) return { classe: 'warning', texto: '⚠️ Acima do normal' };
