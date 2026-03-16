@@ -1,0 +1,4218 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmácia da Liga - Gestão de Consultas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <style>
+        :root {
+            --color-primary: #10b981;
+            --color-primary-hover: #059669;
+            --color-primary-light: #d1fae5;
+            --color-primary-dark: #047857;
+            --color-secondary: #6366f1;
+            --color-secondary-hover: #4f46e5;
+            --color-accent: #f59e0b;
+            --color-accent-hover: #d97706;
+            --color-bg: #f8fafc;
+            --color-bg-dark: #0f172a;
+            --color-surface: #ffffff;
+            --color-surface-elevated: #ffffff;
+            --color-text: #0f172a;
+            --color-text-secondary: #64748b;
+            --color-text-tertiary: #94a3b8;
+            --color-border: #e2e8f0;
+            --color-border-light: #f1f5f9;
+            --color-error: #ef4444;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-info: #3b82f6;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --gradient-primary: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --gradient-secondary: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            --gradient-accent: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(to bottom right, #f8fafc, #e0f2fe);
+            color: var(--color-text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        header {
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border-light);
+            padding: 1.25rem 0;
+            box-shadow: var(--shadow-md);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-secondary {
+            background: var(--color-surface);
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-bg);
+        }
+
+        .btn-danger {
+            background: var(--color-error);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #B91C1C;
+        }
+
+        .btn-small {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.8125rem;
+        }
+
+        nav {
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+            margin-bottom: 2rem;
+        }
+
+        .nav-container {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+        }
+
+        .nav-btn {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--color-text-secondary);
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .nav-btn:hover {
+            color: var(--color-primary);
+        }
+
+        .nav-btn.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+        }
+
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #10b981 0%, #059669 50%, #6366f1 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-container::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            top: -250px;
+            right: -250px;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .login-container::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            bottom: -200px;
+            left: -200px;
+            animation: float 8s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 3rem;
+            border-radius: 24px;
+            box-shadow: var(--shadow-xl), 0 0 0 1px rgba(255,255,255,0.1);
+            width: 100%;
+            max-width: 440px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--color-primary);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .login-subtitle {
+            color: var(--color-text-secondary);
+            font-size: 0.875rem;
+            font-weight: 400;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            color: var(--color-text);
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: border-color 0.2s;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .error-message {
+            color: var(--color-error);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        .success-message {
+            color: var(--color-success);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--color-surface);
+            padding: 1.75rem;
+            border-radius: 16px;
+            border: 1px solid var(--color-border-light);
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--gradient-primary);
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--color-primary-light);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--color-primary);
+            letter-spacing: -0.02em;
+        }
+
+        .stat-label {
+            color: var(--color-text-secondary);
+            font-size: 0.875rem;
+            font-weight: 400;
+        }
+
+        .card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border-light);
+            border-radius: 16px;
+            padding: 1.75rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 0.75rem;
+            background: var(--color-bg);
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--color-text-secondary);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--color-border);
+            font-size: 0.875rem;
+        }
+
+        tr:hover {
+            background: var(--color-bg);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--color-surface);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-content-large {
+            max-width: 1200px;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid var(--color-border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--color-text-secondary);
+            transition: color 0.2s;
+        }
+
+        .close-btn:hover {
+            color: var(--color-text);
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--color-text-secondary);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge-success {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+        .badge-warning {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .badge-error {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .badge-info {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+        .mb-3 { margin-bottom: 1.5rem; }
+        .mb-4 { margin-bottom: 2rem; }
+        .mt-2 { margin-top: 1rem; }
+        .mt-3 { margin-top: 1.5rem; }
+
+        .text-center { text-align: center; }
+        .text-secondary { color: var(--color-text-secondary); }
+        .text-small { font-size: 0.875rem; }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--color-border);
+            margin-bottom: 1.5rem;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--color-text-secondary);
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .tab:hover {
+            color: var(--color-primary);
+        }
+
+        .tab.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .info-box {
+            background: #EFF6FF;
+            border-left: 4px solid var(--color-info);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .info-box-warning {
+            background: #FEF3C7;
+            border-left-color: var(--color-warning);
+        }
+
+        .info-box-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #1E40AF;
+        }
+
+        .info-box-text {
+            font-size: 0.875rem;
+            color: #1E3A8A;
+        }
+
+        .item-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .item-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 0.75rem;
+        }
+
+        .item-title {
+            font-weight: 600;
+            font-size: 0.9375rem;
+            color: var(--color-text);
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.25rem;
+            color: var(--color-text-secondary);
+            transition: color 0.2s;
+        }
+
+        .icon-btn:hover {
+            color: var(--color-primary);
+        }
+
+        .icon-btn.delete:hover {
+            color: var(--color-error);
+        }
+
+        .field-row {
+            display: flex;
+            gap: 1rem;
+            align-items: end;
+            margin-bottom: 0.5rem;
+        }
+
+        .field-row .form-group {
+            margin-bottom: 0;
+            flex: 1;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .divider {
+            border: none;
+            border-top: 1px solid var(--color-border);
+            margin: 1.5rem 0;
+        }
+
+        .sync-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .sync-local {
+            background: rgba(100, 116, 139, 0.1);
+            color: var(--color-text-secondary);
+        }
+
+        .sync-syncing {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .sync-synced {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--color-success);
+        }
+
+        .sync-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--color-error);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 768px) {
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-container {
+                overflow-x: auto;
+            }
+
+            .modal-content {
+                width: 95%;
+            }
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printableGuia, #printableGuia * {
+                visibility: visible;
+            }
+            #printableGuia {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="loginScreen" class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1 class="login-title">🏥 Farmácia da Liga</h1>
+                <p class="login-subtitle">Sistema de Gestão de Consultas Farmacêuticas</p>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label" for="operador">Código Operador</label>
+                    <input type="text" id="operador" class="form-input" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <input type="password" id="password" class="form-input" required>
+                </div>
+                <div id="loginError" class="error-message hidden"></div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                    Entrar
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="mainApp" class="hidden">
+        <header>
+            <div class="container">
+                <div class="header-content">
+                    <div class="logo">🏥 <span id="farmNome">Farmácia da Liga</span></div>
+                    <div class="user-info">
+                        <span id="syncIndicator" class="sync-indicator sync-local" style="font-size: 0.75rem; color: var(--color-text-secondary); margin-right: 1rem;" title="Estado da sincronização">💾 Dados locais</span>
+                        <span id="userName"></span>
+                        <button class="btn btn-secondary btn-small" onclick="forceSyncNow()" style="margin-right: 0.5rem;" title="Sincronizar agora">🔄</button>
+                        <button class="btn btn-secondary" onclick="logout()">Sair</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <nav>
+            <div class="container">
+                <div class="nav-container">
+    <button class="nav-btn active" onclick="showView('dashboard')">Dashboard</button>
+    <button class="nav-btn" onclick="showView('utentes')">Utentes</button>
+    <button class="nav-btn" onclick="showView('consultas')">Consultas</button>
+    <button class="nav-btn hidden" id="protocolosBtn" onclick="showView('protocolos')">Protocolos</button>
+    <button class="nav-btn hidden" id="suplementosNavBtn" onclick="showView('suplementos')">💊 Suplementos</button>
+    <button class="nav-btn hidden" id="adminBtn" onclick="showView('admin')">Administração</button>
+</div>
+            </div>
+        </nav>
+
+        <main class="container">
+            <div id="dashboardView" class="view">
+                <h2 class="mb-3">Dashboard</h2>
+                <div class="dashboard-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📅</div>
+                        <div class="stat-value" id="consultasHoje">0</div>
+                        <div class="stat-label">Consultas Hoje</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-value" id="totalUtentes">0</div>
+                        <div class="stat-label">Utentes Registados</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-value" id="totalConsultas">0</div>
+                        <div class="stat-label">Total de Consultas</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🧪</div>
+                        <div class="stat-value" id="totalTestePOC">0</div>
+                        <div class="stat-label">Testes POC Disponíveis</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Consultas Recentes</h3>
+                        <button class="btn btn-primary" onclick="novaConsulta()">+ Nova Consulta</button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Utente</th>
+                                    <th>Tipo</th>
+                                    <th>Estado</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="consultasRecentesBody">
+                                <tr>
+                                    <td colspan="5" class="text-center text-secondary">Nenhuma consulta registada</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="utentesView" class="view hidden">
+                <div class="card-header">
+                    <h2 class="card-title">Gestão de Utentes</h2>
+                    <button class="btn btn-primary" onclick="novoUtente()">+ Novo Utente</button>
+                </div>
+
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" id="searchUtente" placeholder="Pesquisar por nome ou NIF..." oninput="filterUtentes()">
+                </div>
+
+                <div class="card">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>NIF</th>
+                                    <th>Nome</th>
+                                    <th>Data Nascimento</th>
+                                    <th>Contacto</th>
+                                    <th>Consultas</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="utentesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="consultasView" class="view hidden">
+                <div class="card-header">
+                    <h2 class="card-title">Histórico de Consultas</h2>
+                    <button class="btn btn-primary" onclick="novaConsulta()">+ Nova Consulta</button>
+                </div>
+
+                <div class="card">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Utente</th>
+                                    <th>Tipo Consulta</th>
+                                    <th>Farmacêutico</th>
+                                    <th>Estado</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="consultasTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="protocolosView" class="view hidden">
+                <h2 class="mb-3">📋 Gestão de Protocolos Terapêuticos</h2>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h3 class="card-title">Protocolos Configurados</h3>
+                            <p class="text-secondary text-small">Configure recomendações automáticas para cada tipo de consulta</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="novoProtocolo()">+ Novo Protocolo</button>
+                    </div>
+                    <div id="protocolosList"></div>
+                </div>
+            </div>
+
+<div id="suplementosView" class="view hidden">
+    <div class="card-header">
+        <h2 class="card-title">💊 Suplementos</h2>
+        <button class="btn btn-primary" onclick="novoSuplemento()">+ Novo Suplemento</button>
+    </div>
+
+    <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" id="searchSuplemento"
+               placeholder="Pesquisar por nome ou marca..." oninput="filterSuplemetos()">
+    </div>
+
+    <div class="card">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Marca</th>
+                        <th>Ingredientes</th>
+                        <th>Utilizações</th>
+                        <th>Posologia</th>
+                        <th>Estado</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="suplementosViewTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+            <div id="adminView" class="view hidden">
+                <h2 class="mb-3">Administração</h2>
+                
+                <div class="tabs">
+    <button class="tab active" onclick="showAdminTab('farmacia')">Dados Farmácia</button>
+    <button class="tab" onclick="showAdminTab('tipos')">Tipos de Consulta</button>
+    <button class="tab" onclick="showAdminTab('testes')">Testes POC</button>
+    <button class="tab" onclick="showAdminTab('suplementos')">Suplementos</button>
+    <button class="tab" onclick="showAdminTab('users')">Utilizadores</button>
+</div>
+
+                <div id="farmaciaTab" class="tab-content active">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Informações da Farmácia</h3>
+                        </div>
+                        <form id="farmaciaForm">
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label class="form-label">Nome da Farmácia</label>
+                                    <input type="text" id="farmNome" class="form-input" value="Farmácia da Liga">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Diretora Técnica</label>
+                                    <input type="text" id="farmDiretora" class="form-input" value="Dra. Ana Costa">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Morada</label>
+                                <input type="text" id="farmMorada" class="form-input" value="Rua da Saúde, 123, Vila Nova de Gaia">
+                            </div>
+                            <div class="grid-3">
+                                <div class="form-group">
+                                    <label class="form-label">Telefone</label>
+                                    <input type="tel" id="farmTelefone" class="form-input" value="223 456 789">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" id="farmEmail" class="form-input" value="geral@farmacialiga.pt">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Website</label>
+                                    <input type="text" id="farmWebsite" class="form-input" value="www.farmacialiga.pt">
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="salvarDadosFarmacia()">Guardar Alterações</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="tiposTab" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Tipos de Consulta</h3>
+                            <button class="btn btn-primary btn-small" onclick="novoTipoConsulta()">+ Novo Tipo</button>
+                        </div>
+                        <div id="tiposConsultaList"></div>
+                    </div>
+                </div>
+
+                <div id="testesTab" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Gestão de Testes POC</h3>
+                            <button class="btn btn-primary btn-small" onclick="novoTestePOC()">+ Novo Teste</button>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nome do Teste</th>
+                                        <th>Tipo</th>
+                                        <th>Campos</th>
+                                        <th>Estado</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="testesTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="usersTab" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Utilizadores</h3>
+                            <button class="btn btn-primary btn-small" onclick="novoUtilizador()">+ Novo Utilizador</button>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Operador</th>
+                                        <th>Nome</th>
+                                        <th>Cédula</th>
+                                        <th>Role</th>
+                                        <th>Estado</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="utilizadoresTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+<div id="suplementosTab" class="tab-content">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">💊 Gestão de Suplementos</h3>
+            <button class="btn btn-primary btn-small" onclick="novoSuplemento()">+ Novo Suplemento</button>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Marca</th>
+                        <th>Utilizações</th>
+                        <th>Estado</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="suplementosTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+    <!-- Modal Novo Utente -->
+    <div id="novoUtenteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Novo Utente</h3>
+                <button class="close-btn" onclick="closeModal('novoUtenteModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="novoUtenteForm">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">NIF *</label>
+                            <input type="text" id="utenteNIF" class="form-input" required maxlength="9">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nome Completo *</label>
+                            <input type="text" id="utenteNome" class="form-input" required>
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Data de Nascimento *</label>
+                            <input type="date" id="utenteDataNascimento" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Sexo *</label>
+                            <select id="utenteSexo" class="form-select" required>
+                                <option value="">Selecione</option>
+                                <option value="M">Masculino</option>
+                                <option value="F">Feminino</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Contacto *</label>
+                            <input type="tel" id="utenteContacto" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" id="utenteEmail" class="form-input">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Alergias</label>
+                        <textarea id="utenteAlergias" class="form-textarea" rows="2" placeholder="Separe por vírgulas"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Patologias Crónicas</label>
+                        <textarea id="utentePatologias" class="form-textarea" rows="2" placeholder="Separe por vírgulas"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Medicação Habitual</label>
+                        <textarea id="utenteMedicacao" class="form-textarea" rows="3" placeholder="Separe por vírgulas"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('novoUtenteModal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarNovoUtente()">Guardar Utente</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Ficha Utente -->
+    <div id="fichaUtenteModal" class="modal">
+        <div class="modal-content modal-content-large">
+            <div class="modal-header">
+                <h3 class="modal-title">Ficha do Utente</h3>
+                <button class="close-btn" onclick="closeModal('fichaUtenteModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="fichaUtenteContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('fichaUtenteModal')">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nova Consulta -->
+    <div id="novaConsultaModal" class="modal">
+        <div class="modal-content modal-content-large">
+            <div class="modal-header">
+                <h3 class="modal-title" id="consultaModalTitle">Nova Consulta</h3>
+                <button class="close-btn" onclick="closeModal('novaConsultaModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="consultaStep1">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Utente *</label>
+                            <select id="consultaUtente" class="form-select" required onchange="carregarDadosUtente()">
+                                <option value="">Selecione um utente</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tipo de Consulta *</label>
+                            <select id="consultaTipo" class="form-select" required>
+                                <option value="">Selecione o tipo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Data e Hora *</label>
+                        <input type="datetime-local" id="consultaData" class="form-input" required>
+                    </div>
+                    <div id="alertasUtente" class="hidden"></div>
+                </div>
+
+                <div id="consultaStep2" class="hidden">
+                    <div class="tabs">
+                        <button class="tab active" onclick="showConsultaTab('questionario')">Questionário</button>
+                        <button class="tab" onclick="showConsultaTab('testes')">Testes POC</button>
+                        <button class="tab" onclick="showConsultaTab('guia')">Guia Terapêutico</button>
+                    </div>
+
+                    <div id="questionarioConsultaTab" class="tab-content active">
+                        <div id="questionarioContent"></div>
+                    </div>
+
+                    <div id="testesConsultaTab" class="tab-content">
+                        <div class="card-header">
+                            <h4>Testes POC</h4>
+                            <button class="btn btn-primary btn-small" onclick="adicionarTestePOC()">+ Adicionar Teste</button>
+                        </div>
+                        <div id="testesContent" class="item-list mt-2"></div>
+                    </div>
+
+                    <div id="guiaConsultaTab" class="tab-content">
+                        <div id="guiaContent">
+                            <h4 class="mb-2">💊 Suplementos Recomendados</h4>
+                            <div id="suplementosContent" class="item-list mb-3"></div>
+                            <button class="btn btn-secondary btn-small mb-3" onclick="adicionarSuplemento()">+ Adicionar Suplemento</button>
+
+                            <hr class="divider">
+
+                            <h4 class="mb-2">🥗 Medidas Não-Farmacológicas</h4>
+                            <div id="medidasContent" class="item-list mb-3"></div>
+                            <button class="btn btn-secondary btn-small mb-3" onclick="adicionarMedida()">+ Adicionar Medida</button>
+
+                            <hr class="divider">
+
+                            <h4 class="mb-2">🔬 Exames Laboratoriais Sugeridos</h4>
+                            <div id="examesContent" class="item-list mb-3"></div>
+                            <button class="btn btn-secondary btn-small mb-3" onclick="adicionarExame()">+ Adicionar Exame</button>
+
+                            <hr class="divider">
+
+                            <div class="form-group">
+                                <label class="form-label">📝 Observações Finais</label>
+                                <textarea id="guiaObservacoes" class="form-textarea" rows="4"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">📅 Próxima Consulta (Sugestão)</label>
+                                <input type="date" id="guiaProximaConsulta" class="form-input">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('novaConsultaModal')">Cancelar</button>
+                <button id="btnAvancar" class="btn btn-primary" onclick="avancarConsulta()">Avançar</button>
+                <button id="btnFinalizar" class="btn btn-primary hidden" onclick="finalizarConsulta()">Finalizar & Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Novo Teste POC -->
+    <div id="novoTestePOCModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Novo Teste POC</h3>
+                <button class="close-btn" onclick="closeModal('novoTestePOCModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="novoTestePOCForm">
+                    <div class="form-group">
+                        <label class="form-label">Nome do Teste *</label>
+                        <input type="text" id="testePOCNome" class="form-input" required placeholder="Ex: Glicemia Capilar">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tipo de Teste *</label>
+                        <select id="testePOCTipo" class="form-select" required onchange="atualizarCamposTestePOC()">
+                            <option value="">Selecione</option>
+                            <option value="unico">Valor Único</option>
+                            <option value="multiplo">Valores Múltiplos</option>
+                        </select>
+                    </div>
+                    <div id="camposTestePOC"></div>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="adicionarCampoTestePOC()">+ Adicionar Campo</button>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('novoTestePOCModal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarTestePOC()">Guardar Teste</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Teste POC -->
+    <div id="editarTestePOCModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Editar Teste POC</h3>
+                <button class="close-btn" onclick="closeModal('editarTestePOCModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editarTestePOCForm">
+                    <input type="hidden" id="editTesteId">
+                    <div class="form-group">
+                        <label class="form-label">Nome do Teste *</label>
+                        <input type="text" id="editTestePOCNome" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tipo de Teste *</label>
+                        <select id="editTestePOCTipo" class="form-select" required onchange="atualizarCamposEditTestePOC()">
+                            <option value="unico">Valor Único</option>
+                            <option value="multiplo">Valores Múltiplos</option>
+                        </select>
+                    </div>
+                    <div id="camposEditTestePOC"></div>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="adicionarCampoEditTestePOC()">+ Adicionar Campo</button>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('editarTestePOCModal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarEdicaoTestePOC()">Guardar Alterações</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tipo de Consulta -->
+    <div id="tipoConsultaModal" class="modal">
+        <div class="modal-content modal-content-large">
+            <div class="modal-header">
+                <h3 class="modal-title" id="tipoConsultaModalTitle">Novo Tipo de Consulta</h3>
+                <button class="close-btn" onclick="closeModal('tipoConsultaModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="tipoConsultaForm">
+                    <input type="hidden" id="editTipoId">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Nome do Tipo *</label>
+                            <input type="text" id="tipoConsultaNome" class="form-input" required placeholder="Ex: Menopausa, Diabetes">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Cor (Hex) *</label>
+                            <input type="color" id="tipoConsultaCor" class="form-input" required>
+                        </div>
+                    </div>
+
+                    <hr class="divider">
+
+                    <h4 class="mb-2">🧪 Testes POC Associados</h4>
+                    <div class="info-box mb-3">
+                        <p class="text-small">Selecione os testes POC que serão automaticamente sugeridos neste tipo de consulta.</p>
+                    </div>
+                    <div id="testesAssociados" class="checkbox-group mb-3"></div>
+
+                    <hr class="divider">
+
+                    <h4 class="mb-2">📋 Questionário da Consulta</h4>
+                    <div class="info-box mb-3">
+                        <p class="text-small">Configure as perguntas que serão apresentadas durante a consulta.</p>
+                    </div>
+                    <div id="questionarioFields" class="item-list mb-3"></div>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="adicionarCampoQuestionario()">+ Adicionar Pergunta</button>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('tipoConsultaModal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarTipoConsulta()">Guardar Tipo de Consulta</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Protocolo Terapêutico -->
+    <div id="protocoloModal" class="modal">
+        <div class="modal-content modal-content-large">
+            <div class="modal-header">
+                <h3 class="modal-title" id="protocoloModalTitle">Novo Protocolo Terapêutico</h3>
+                <button class="close-btn" onclick="closeModal('protocoloModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="protocoloForm">
+                    <input type="hidden" id="editProtocoloId">
+                    
+                    <div class="form-group">
+                        <label class="form-label">Tipo de Consulta Associado *</label>
+                        <select id="protocoloTipoConsulta" class="form-select" required>
+                            <option value="">Selecione o tipo de consulta</option>
+                        </select>
+                    </div>
+
+                    <div class="info-box mb-3">
+                        <p class="text-small">💡 Configure as recomendações que serão sugeridas automaticamente durante este tipo de consulta</p>
+                    </div>
+
+                    <hr class="divider">
+
+                    <h4 class="mb-2">💊 Suplementos Recomendados</h4>
+                    <div class="info-box mb-3">
+                        <p class="text-small">Defina suplementos que serão automaticamente sugeridos nas consultas</p>
+                    </div>
+                    <div id="protocoloSuplementos" class="item-list mb-3"></div>
+                    <button type="button" class="btn btn-secondary btn-small mb-4" onclick="adicionarSuplementoProtocolo()">+ Adicionar Suplemento</button>
+
+                    <hr class="divider">
+
+                    <h4 class="mb-2">🥗 Medidas Não-Farmacológicas</h4>
+                    <div class="info-box mb-3">
+                        <p class="text-small">Defina orientações de estilo de vida e medidas gerais</p>
+                    </div>
+                    <div id="protocoloMedidas" class="item-list mb-3"></div>
+                    <button type="button" class="btn btn-secondary btn-small mb-4" onclick="adicionarMedidaProtocolo()">+ Adicionar Medida</button>
+
+                    <hr class="divider">
+
+                    <h4 class="mb-2">🔬 Exames Laboratoriais Sugeridos</h4>
+                    <div class="info-box mb-3">
+                        <p class="text-small">Defina exames que devem ser considerados para este tipo de consulta</p>
+                    </div>
+                    <div id="protocoloExames" class="item-list mb-3"></div>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="adicionarExameProtocolo()">+ Adicionar Exame</button>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('protocoloModal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarProtocolo()">Guardar Protocolo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Novo Utilizador -->
+    <div id="novoUtilizadorModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Novo Utilizador</h3>
+                <button class="close-btn" onclick="closeModal('novoUtilizadorModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="novoUtilizadorForm">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Código Operador *</label>
+                            <input type="text" id="userOperador" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Password *</label>
+                            <input type="password" id="userPassword" class="form-input" required>
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Nome Completo *</label>
+                            <input type="text" id="userNome" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Cédula Profissional *</label>
+                            <input type="text" id="userCedula" class="form-input" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Perfil *</label>
+                        <select id="userRole" class="form-select" required>
+                            <option value="farmaceutico">Farmacêutico</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Permissões de Consulta</label>
+                        <div id="permissoesConsulta" class="checkbox-group"></div>
+                    </div>
+                </form>
+            </div>ender
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('novoUtilizadorModal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarUtilizador()">Guardar Utilizador</button>
+            </div>
+        </div>
+    </div>
+
+<!-- Modal Novo Suplemento -->
+<div id="novoSuplementoModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">💊 Novo Suplemento</h3>
+            <button class="close-btn" onclick="closeModal('novoSuplementoModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="novoSuplementoForm">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Nome *</label>
+                        <input type="text" id="supNome" class="form-input" required placeholder="Ex: Vitamina D3">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Marca</label>
+                        <input type="text" id="supMarca" class="form-input" placeholder="Ex: Solgar">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ingredientes</label>
+                    <textarea id="supIngredientes" class="form-textarea" rows="3" placeholder="Ex: Colecalciferol 1000 UI, Azeite de oliva..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Utilizações</label>
+                    <textarea id="supUtilizacoes" class="form-textarea" rows="3" placeholder="Ex: Deficiência de vitamina D, saúde óssea..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Posologia</label>
+                    <textarea id="supPosologia" class="form-textarea" rows="2" placeholder="Ex: 1 cápsula por dia, de preferência com a refeição"></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('novoSuplementoModal')">Cancelar</button>
+            <button class="btn btn-primary" onclick="salvarSuplemento()">Guardar Suplemento</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Suplemento -->
+<div id="editarSuplementoModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">✏️ Editar Suplemento</h3>
+            <button class="close-btn" onclick="closeModal('editarSuplementoModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="editarSuplementoForm">
+                <input type="hidden" id="editSupId">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Nome *</label>
+                        <input type="text" id="editSupNome" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Marca</label>
+                        <input type="text" id="editSupMarca" class="form-input">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ingredientes</label>
+                    <textarea id="editSupIngredientes" class="form-textarea" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Utilizações</label>
+                    <textarea id="editSupUtilizacoes" class="form-textarea" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Posologia</label>
+                    <textarea id="editSupPosologia" class="form-textarea" rows="2"></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('editarSuplementoModal')">Cancelar</button>
+            <button class="btn btn-primary" onclick="salvarEdicaoSuplemento()">Guardar Alterações</button>
+        </div>
+    </div>
+</div>
+
+    <script>
+        // ==========================================
+        // CONFIGURAÇÃO FIREBASE FIRESTORE
+        // ==========================================
+        
+        // INSTRUÇÕES DE CONFIGURAÇÃO:
+        // 1. Aceda a https://console.firebase.google.com
+        // 2. Crie um novo projeto ou selecione um existente
+        // 3. Aceda a "Project Settings" (ícone engrenagem)
+        // 4. Na secção "Your apps", clique em "</>" (Web)
+        // 5. Registe a app e copie as credenciais abaixo
+        // 6. No menu lateral, vá a "Firestore Database" e clique "Create database"
+        // 7. Escolha "Start in test mode" (ou configure regras de segurança)
+        
+        const firebaseConfig = {
+             apiKey: "AIzaSyAuo4OJkbM4YgpaApgbW7DI2UQjhEFLAuU",
+  authDomain: "consultas-liga-2fb6a.firebaseapp.com",
+  projectId: "consultas-liga-2fb6a",
+  storageBucket: "consultas-liga-2fb6a.firebasestorage.app",
+  messagingSenderId: "907139973930",
+  appId: "1:907139973930:web:e1fdda2de9379bb5349453"
+        };
+
+        // Variáveis globais Firebase
+        let app = null;
+        let db = null;
+        let firebaseInitialized = false;
+
+        // Tentar inicializar Firebase
+        try {
+            app = firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            
+            // Configurar persistência offline
+            db.enablePersistence({ synchronizeTabs: true })
+                .then(() => {
+                    console.log('✅ Firebase persistência offline ativada');
+                    firebaseInitialized = true;
+                })
+                .catch((err) => {
+                    if (err.code === 'failed-precondition') {
+                        console.warn('⚠️ Múltiplos tabs abertos - persistência desativada');
+                    } else if (err.code === 'unimplemented') {
+                        console.warn('⚠️ Browser não suporta persistência');
+                    }
+                    firebaseInitialized = true;
+                });
+        } catch (error) {
+            console.warn('⚠️ Firebase não configurado - usando apenas localStorage:', error.message);
+            firebaseInitialized = false;
+        }
+        
+        // Configuração de sincronização automática (em milissegundos)
+        const AUTO_SYNC_INTERVAL = 60000; // 60 segundos (mais eficiente)
+
+        // Estado global da aplicação
+        const state = {
+            currentUser: null,
+            currentConsulta: null,
+            utentes: [],
+            consultas: [],
+            tiposConsulta: [],
+            testesPOC: [],
+suplementos: [],
+            utilizadores: [
+                { 
+                    operador: '64', 
+                    passwordHash: '56855', 
+                    nome: 'Administrador', 
+                    cedula: 'ADMIN', 
+                    role: 'admin', 
+                    ativo: true,
+                    permissoes: []
+                }
+            ],
+            config: {
+                nome: 'Farmácia da Liga',
+                diretora: 'Dra. Ana Costa',
+                morada: 'Rua da Saúde, 123, Vila Nova de Gaia',
+                telefone: '223 456 789',
+                email: 'geral@farmacialiga.pt',
+                website: 'www.farmacialiga.pt'
+            },
+            protocolos: [],
+            lastSync: null,
+            syncStatus: 'local' // 'local', 'syncing', 'synced', 'error'
+        };
+
+        // ==========================================
+        // SISTEMA DE SINCRONIZAÇÃO COM SERVIDOR
+        // ==========================================
+
+        // ==========================================
+        // SISTEMA FIREBASE FIRESTORE
+        // ==========================================
+
+        // Carregar dados do Firestore
+       async function loadFromServer() {
+    if (!firebaseInitialized || !db) {
+        console.log('📁 Firebase não disponível - usando localStorage');
+        loadFromLocalStorage();
+        return false;
+    }
+    
+    try {
+        state.syncStatus = 'syncing';
+        updateSyncIndicator();
+        
+        console.log('🔄 Iniciando sincronização Firebase...');
+        
+        // Carregar cada coleção do Firestore
+        const [utentesSnap, consultasSnap, tiposSnap, testesSnap, usersSnap, configSnap, protocolosSnap, suplementosSnap] = await Promise.all([
+            db.collection('utentes').get(),
+            db.collection('consultas').get(),
+            db.collection('tiposConsulta').get(),
+            db.collection('testesPOC').get(),
+            db.collection('utilizadores').get(),
+            db.collection('config').doc('farmacia').get(),
+            db.collection('protocolos').get(),
+            db.collection('suplementos').get() // ← vírgula antes desta linha
+        ]);
+        
+        // Processar utentes
+        state.utentes = [];
+        utentesSnap.forEach(doc => {
+            state.utentes.push({ id: doc.id, ...doc.data() });
+        });
+        
+        // Processar consultas
+        state.consultas = [];
+        consultasSnap.forEach(doc => {
+            state.consultas.push({ id: doc.id, ...doc.data() });
+        });
+        
+        // Processar tipos de consulta
+        state.tiposConsulta = [];
+        tiposSnap.forEach(doc => {
+            state.tiposConsulta.push({ id: doc.id, ...doc.data() });
+        });
+        if (state.tiposConsulta.length === 0) {
+            state.tiposConsulta = inicializarTiposConsulta();
+        }
+        
+        // Processar testes POC
+        state.testesPOC = [];
+        testesSnap.forEach(doc => {
+            state.testesPOC.push({ id: doc.id, ...doc.data() });
+        });
+        if (state.testesPOC.length === 0) {
+            state.testesPOC = inicializarTestesPOC();
+        }
+        
+        // Processar utilizadores
+        state.utilizadores = [];
+        usersSnap.forEach(doc => {
+            state.utilizadores.push(doc.data());
+        });
+        if (state.utilizadores.length === 0) {
+            state.utilizadores = [{
+                operador: '64',
+                passwordHash: '56855',
+                nome: 'Administrador',
+                cedula: 'ADMIN',
+                role: 'admin',
+                ativo: true,
+                permissoes: []
+            }];
+        }
+        
+        // Processar config
+        if (configSnap.exists) {
+            state.config = configSnap.data();
+        }
+        
+        // Processar protocolos
+        state.protocolos = [];
+        protocolosSnap.forEach(doc => {
+            state.protocolos.push({ id: doc.id, ...doc.data() });
+        });
+
+        // Processar suplementos
+        state.suplementos = [];
+        suplementosSnap.forEach(doc => {
+            state.suplementos.push({ id: doc.id, ...doc.data() });
+        });
+        
+        state.lastSync = new Date().toISOString();
+        state.syncStatus = 'synced';
+
+        // Backup local
+        localStorage.setItem('farmaciaConsultasData', JSON.stringify({
+            utentes: state.utentes,
+            consultas: state.consultas,
+            tiposConsulta: state.tiposConsulta,
+            testesPOC: state.testesPOC,
+            suplementos: state.suplementos,
+            utilizadores: state.utilizadores,
+            config: state.config,
+            protocolos: state.protocolos,
+            lastSync: state.lastSync
+        }));
+        
+        console.log('✅ Dados sincronizados do Firebase:', new Date().toLocaleTimeString('pt-PT'));
+        updateSyncIndicator();
+        return true;
+    } catch (error) {
+        console.error('❌ Erro ao carregar do Firebase:', error);
+        state.syncStatus = 'error';
+        updateSyncIndicator();
+        return false;
+    }
+}
+
+        // Guardar dados no Firestore
+        async function saveToServer() {
+            if (!firebaseInitialized || !db) {
+                console.log('📁 Firebase não disponível - guardando apenas localmente');
+                localStorage.setItem('farmaciaConsultasData', JSON.stringify({
+                    utentes: state.utentes,
+                    consultas: state.consultas,
+                    tiposConsulta: state.tiposConsulta,
+                    testesPOC: state.testesPOC,
+   suplementos: state.suplementos,
+                    utilizadores: state.utilizadores,
+                    config: state.config,
+                    protocolos: state.protocolos
+                }));
+                return false;
+            }
+            
+            try {
+                state.syncStatus = 'syncing';
+                updateSyncIndicator();
+                
+                console.log('💾 Guardando dados no Firebase...');
+                
+                const batch = db.batch();
+                
+                // Guardar utentes
+                state.utentes.forEach(utente => {
+                    const ref = db.collection('utentes').doc(utente.nif);
+                    batch.set(ref, utente);
+                });
+                
+                // Guardar consultas
+                state.consultas.forEach(consulta => {
+                    const ref = db.collection('consultas').doc(consulta.id);
+                    batch.set(ref, consulta);
+                });
+                
+                // Guardar tipos de consulta
+                state.tiposConsulta.forEach(tipo => {
+                    const ref = db.collection('tiposConsulta').doc(tipo.id);
+                    batch.set(ref, tipo);
+                });
+                
+                // Guardar testes POC
+                state.testesPOC.forEach(teste => {
+                    const ref = db.collection('testesPOC').doc(teste.id);
+                    batch.set(ref, teste);
+                });
+
+// Guardar suplementos
+state.suplementos.forEach(sup => {
+    const ref = db.collection('suplementos').doc(sup.id);
+    batch.set(ref, sup);
+});
+                
+                // Guardar utilizadores
+                state.utilizadores.forEach(user => {
+                    const ref = db.collection('utilizadores').doc(user.operador);
+                    batch.set(ref, user);
+                });
+                
+                // Guardar config
+                const configRef = db.collection('config').doc('farmacia');
+                batch.set(configRef, state.config);
+                
+                // Guardar protocolos
+                state.protocolos.forEach(protocolo => {
+                    const ref = db.collection('protocolos').doc(protocolo.id);
+                    batch.set(ref, protocolo);
+                });
+                
+                await batch.commit();
+                
+                state.lastSync = new Date().toISOString();
+                state.syncStatus = 'synced';
+                
+                // Backup local
+                localStorage.setItem('farmaciaConsultasData', JSON.stringify({
+                    utentes: state.utentes,
+                    consultas: state.consultas,
+                    tiposConsulta: state.tiposConsulta,
+                    testesPOC: state.testesPOC,
+   suplementos: state.suplementos,
+                    utilizadores: state.utilizadores,
+                    config: state.config,
+                    protocolos: state.protocolos,
+                    lastSync: state.lastSync
+                }));
+                
+                console.log('✅ Dados guardados no Firebase:', new Date().toLocaleTimeString('pt-PT'));
+                updateSyncIndicator();
+                return true;
+            } catch (error) {
+                console.error('❌ Erro ao guardar no Firebase:', error);
+                state.syncStatus = 'error';
+                updateSyncIndicator();
+                
+                // Fallback local
+                localStorage.setItem('farmaciaConsultasData', JSON.stringify({
+                    utentes: state.utentes,
+                    consultas: state.consultas,
+                    tiposConsulta: state.tiposConsulta,
+                    testesPOC: state.testesPOC,
+   suplementos: state.suplementos,
+                    utilizadores: state.utilizadores,
+                    config: state.config,
+                    protocolos: state.protocolos
+                }));
+                
+                return false;
+            }
+        }
+
+        // Atualizar indicador visual de sincronização
+        function updateSyncIndicator() {
+            const indicator = document.getElementById('syncIndicator');
+            if (!indicator) return;
+            
+            const icons = {
+                'local': '💾',
+                'syncing': '🔄',
+                'synced': '☁️',
+                'error': '⚠️'
+            };
+            
+            const messages = {
+                'local': 'Dados locais',
+                'syncing': 'Sincronizando...',
+                'synced': `Sincronizado ${state.lastSync ? new Date(state.lastSync).toLocaleTimeString('pt-PT') : ''}`,
+                'error': 'Erro na sincronização'
+            };
+            
+            indicator.innerHTML = `${icons[state.syncStatus]} ${messages[state.syncStatus]}`;
+            indicator.className = `sync-indicator sync-${state.syncStatus}`;
+        }
+
+        // Funções de localStorage (mantidas para compatibilidade e backup)
+        function loadData() {
+            // Sempre tentar carregar do Firebase primeiro
+            loadFromServer().then(success => {
+                if (!success) {
+                    // Se falhar, carregar do localStorage
+                    loadFromLocalStorage();
+                }
+            });
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('farmaciaConsultasData');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    state.utentes = data.utentes || [];
+                    state.consultas = data.consultas || [];
+                    state.tiposConsulta = data.tiposConsulta || inicializarTiposConsulta();
+                    state.testesPOC = data.testesPOC || inicializarTestesPOC();
+            state.suplementos = data.suplementos || []; 
+                    state.utilizadores = data.utilizadores || state.utilizadores;
+                    state.config = data.config || state.config;
+                    state.protocolos = data.protocolos || [];
+                    state.lastSync = data.lastSync || null;
+                    state.syncStatus = 'local';
+                    updateSyncIndicator();
+                    console.log('📁 Dados carregados do localStorage');
+                } catch(e) {
+                    console.error('Erro ao carregar dados:', e);
+                    inicializarDadosDemo();
+                }
+            } else {
+                inicializarDadosDemo();
+            }
+        }
+
+        function saveData() {
+            // Sempre tentar guardar no Firebase
+            saveToServer();
+        }
+
+        // Sincronização automática em segundo plano
+        function startAutoSync() {
+            if (!firebaseInitialized || !db) {
+                console.log('📁 Sincronização automática desativada - Firebase não configurado');
+                return;
+            }
+            
+            setInterval(async () => {
+                // Apenas sincroniza se houver um utilizador logado e Firebase disponível
+                if (state.currentUser && state.syncStatus !== 'syncing' && firebaseInitialized) {
+                    await loadFromServer();
+                    // Atualizar visualizações se necessário
+                    if (document.getElementById('dashboardView').classList.contains('hidden') === false) {
+                        updateDashboard();
+                    }
+                }
+            }, AUTO_SYNC_INTERVAL);
+            
+            console.log(`🔄 Sincronização automática Firebase ativada (a cada ${AUTO_SYNC_INTERVAL/1000}s)`);
+        }
+
+        // Forçar sincronização manual
+        async function forceSyncNow() {
+            if (!firebaseInitialized || !db) {
+                alert('⚠️ Firebase não está configurado.\n\nPara ativar:\n1. Configure as credenciais no código\n2. Recarregue a página\n\nDados estão a ser guardados localmente.');
+                return;
+            }
+            
+            state.syncStatus = 'syncing';
+            updateSyncIndicator();
+            
+            try {
+                // Primeiro guardar dados locais no servidor
+                await saveToServer();
+                
+                // Depois carregar dados atualizados
+                const success = await loadFromServer();
+                
+                if (success) {
+                    alert('✅ Dados sincronizados com Firebase!\n\n' + 
+                          `Utentes: ${state.utentes.length}\n` +
+                          `Consultas: ${state.consultas.length}\n` +
+                          `Última sync: ${new Date().toLocaleTimeString('pt-PT')}`);
+                    
+                    // Atualizar todas as visualizações
+                    updateDashboard();
+                    if (!document.getElementById('utentesView').classList.contains('hidden')) {
+                        renderUtentes();
+                    }
+                    if (!document.getElementById('consultasView').classList.contains('hidden')) {
+                        renderConsultas();
+                    }
+                    if (!document.getElementById('protocolosView').classList.contains('hidden')) {
+                        renderProtocolos();
+                    }
+                } else {
+                    alert('⚠️ Erro na sincronização Firebase.\n\nVerifique:\n- Credenciais corretas\n- Firestore Database criada\n- Regras de segurança configuradas');
+                }
+            } catch (error) {
+                console.error('Erro na sincronização:', error);
+                alert('❌ Erro: ' + error.message);
+                state.syncStatus = 'error';
+                updateSyncIndicator();
+            }
+        }
+
+        function inicializarTiposConsulta() {
+            return [
+                { 
+                    id: 'menopausa', 
+                    nome: 'Menopausa', 
+                    cor: '#EC4899',
+                    pocDefaultIds: ['fsh', 'pressao_arterial', 'perfil_lipidico'],
+                    ativo: true
+                },
+                { 
+                    id: 'diabetes', 
+                    nome: 'Diabetes Mellitus', 
+                    cor: '#3B82F6',
+                    pocDefaultIds: ['glicemia', 'hba1c', 'pressao_arterial', 'perfil_lipidico'],
+                    ativo: true
+                },
+                { 
+                    id: 'hipertensao', 
+                    nome: 'Hipertensão Arterial', 
+                    cor: '#EF4444',
+                    pocDefaultIds: ['pressao_arterial', 'glicemia', 'perfil_lipidico'],
+                    ativo: true
+                },
+                { 
+                    id: 'respiratorias', 
+                    nome: 'Doenças Respiratórias', 
+                    cor: '#10B981',
+                    pocDefaultIds: ['saturacao_o2'],
+                    ativo: true
+                },
+                { 
+                    id: 'pele', 
+                    nome: 'Saúde da Pele', 
+                    cor: '#F59E0B',
+                    pocDefaultIds: [],
+                    ativo: true
+                },
+                { 
+                    id: 'acompanhamento', 
+                    nome: 'Acompanhamento Farmacoterapêutico', 
+                    cor: '#8B5CF6',
+                    pocDefaultIds: ['pressao_arterial'],
+                    ativo: true
+                }
+            ];
+        }
+
+        function inicializarTestesPOC() {
+            return [
+                {
+                    id: 'pressao_arterial',
+                    nome: 'Pressão Arterial',
+                    tipo: 'multiplo',
+                    campos: [
+                        { nome: 'Sistólica', unidade: 'mmHg', min: 90, max: 130 },
+                        { nome: 'Diastólica', unidade: 'mmHg', min: 60, max: 80 }
+                    ],
+                    ativo: true
+                },
+                {
+                    id: 'glicemia',
+                    nome: 'Glicemia Capilar',
+                    tipo: 'unico',
+                    campos: [
+                        { nome: 'Glicemia', unidade: 'mg/dL', min: 70, max: 100 }
+                    ],
+                    ativo: true
+                },
+                {
+                    id: 'hba1c',
+                    nome: 'Hemoglobina Glicada (HbA1c)',
+                    tipo: 'unico',
+                    campos: [
+                        { nome: 'HbA1c', unidade: '%', min: 4, max: 5.7 }
+                    ],
+                    ativo: true
+                },
+                {
+                    id: 'perfil_lipidico',
+                    nome: 'Perfil Lipídico',
+                    tipo: 'multiplo',
+                    campos: [
+                        { nome: 'Colesterol Total', unidade: 'mg/dL', min: 0, max: 200 },
+                        { nome: 'LDL', unidade: 'mg/dL', min: 0, max: 100 },
+                        { nome: 'HDL', unidade: 'mg/dL', min: 40, max: 999 },
+                        { nome: 'Triglicerídeos', unidade: 'mg/dL', min: 0, max: 150 }
+                    ],
+                    ativo: true
+                },
+                {
+                    id: 'fsh',
+                    nome: 'FSH (Hormona Folículo-Estimulante)',
+                    tipo: 'unico',
+                    campos: [
+                        { nome: 'FSH', unidade: 'mUI/mL', min: 0, max: 30 }
+                    ],
+                    ativo: true
+                },
+                {
+                    id: 'saturacao_o2',
+                    nome: 'Saturação de O₂',
+                    tipo: 'unico',
+                    campos: [
+                        { nome: 'SpO₂', unidade: '%', min: 95, max: 100 }
+                    ],
+                    ativo: true
+                }
+            ];
+        }
+
+        function inicializarDadosDemo() {
+            state.tiposConsulta = inicializarTiposConsulta();
+            state.testesPOC = inicializarTestesPOC();
+            state.utentes = [];
+            state.consultas = [];
+            saveData();
+        }
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const operador = document.getElementById('operador').value;
+            const password = document.getElementById('password').value;
+            
+            const user = state.utilizadores.find(u => u.operador === operador && u.passwordHash === password && u.ativo);
+            
+            if (user) {
+                state.currentUser = user;
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                document.getElementById('userName').textContent = user.nome;
+                document.getElementById('farmNome').textContent = state.config.nome;
+                
+                if (user.role === 'admin') {
+                    document.getElementById('adminBtn').classList.remove('hidden');
+                    document.getElementById('protocolosBtn').classList.remove('hidden');
+  document.getElementById('suplementosNavBtn').classList.remove('hidden');
+                }
+                
+                updateDashboard();
+            } else {
+                const errorEl = document.getElementById('loginError');
+                errorEl.textContent = 'Credenciais inválidas';
+                errorEl.classList.remove('hidden');
+            }
+        });
+
+        function logout() {
+            state.currentUser = null;
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('operador').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('loginError').classList.add('hidden');
+            document.getElementById('adminBtn').classList.add('hidden');
+            document.getElementById('protocolosBtn').classList.add('hidden');
+        }
+
+        // Navegação
+        function showView(viewName) {
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(viewName + 'View').classList.remove('hidden');
+            event.target.classList.add('active');
+            
+            if (viewName === 'dashboard') updateDashboard();
+            if (viewName === 'utentes') renderUtentes();
+            if (viewName === 'consultas') renderConsultas();
+            if (viewName === 'protocolos') renderProtocolos();
+            if (viewName === 'admin') renderAdmin();
+if (viewName === 'suplementos') renderSuplementosView();
+        }
+
+function showAdminTab(tabName) {
+    document.querySelectorAll('#adminView .tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#adminView .tab-content').forEach(c => c.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById(tabName + 'Tab').classList.add('active');
+    if (tabName === 'tipos') renderTiposConsulta();
+    if (tabName === 'testes') renderTestesPOC();
+    if (tabName === 'users') renderUtilizadores();
+    if (tabName === 'suplementos') renderSuplementosAdmin(); // ← NOVO
+}
+
+        function showConsultaTab(tabName) {
+            document.querySelectorAll('#novaConsultaModal .tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#novaConsultaModal .tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'ConsultaTab').classList.add('active');
+        }
+
+        // Dashboard
+        function updateDashboard() {
+            document.getElementById('totalUtentes').textContent = state.utentes.length;
+            document.getElementById('totalConsultas').textContent = state.consultas.length;
+            document.getElementById('totalTestePOC').textContent = state.testesPOC.filter(t => t.ativo).length;
+            
+            const hoje = new Date().toDateString();
+            const consultasHoje = state.consultas.filter(c => new Date(c.data).toDateString() === hoje);
+            document.getElementById('consultasHoje').textContent = consultasHoje.length;
+            
+            renderConsultasRecentes();
+        }
+
+        function renderConsultasRecentes() {
+            const tbody = document.getElementById('consultasRecentesBody');
+            const recentes = state.consultas.slice(-10).reverse();
+            
+            if (recentes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-secondary">Nenhuma consulta registada</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = recentes.map(c => {
+                const utente = state.utentes.find(u => u.nif === c.utenteNIF);
+                const tipo = state.tiposConsulta.find(t => t.id === c.tipo);
+                const data = new Date(c.data).toLocaleString('pt-PT', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                return `
+                    <tr>
+                        <td>${data}</td>
+                        <td>${utente?.nome || 'Desconhecido'}</td>
+                        <td><span style="color: ${tipo?.cor}">${tipo?.nome || c.tipo}</span></td>
+                        <td><span class="badge badge-${c.estado === 'concluida' ? 'success' : 'warning'}">${c.estado}</span></td>
+                        <td>
+                            <button class="btn btn-secondary btn-small" onclick="abrirConsulta('${c.id}')">Abrir</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Utentes
+        function renderUtentes() {
+            const tbody = document.getElementById('utentesTableBody');
+            
+            if (state.utentes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-secondary">Nenhum utente registado. Clique em "+ Novo Utente" para começar.</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = state.utentes.map(u => {
+                const idade = new Date().getFullYear() - new Date(u.dataNascimento).getFullYear();
+                const nConsultas = state.consultas.filter(c => c.utenteNIF === u.nif).length;
+                
+                return `
+                    <tr>
+                        <td>${u.nif}</td>
+                        <td>${u.nome} (${idade} anos)</td>
+                        <td>${new Date(u.dataNascimento).toLocaleDateString('pt-PT')}</td>
+                        <td>${u.contacto}</td>
+                        <td>${nConsultas}</td>
+                        <td>
+                            <button class="btn btn-secondary btn-small" onclick="verFichaUtente('${u.nif}')">Ver Ficha</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterUtentes() {
+            const search = document.getElementById('searchUtente').value.toLowerCase();
+            const rows = document.querySelectorAll('#utentesTableBody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(search) ? '' : 'none';
+            });
+        }
+
+        function novoUtente() {
+            document.getElementById('novoUtenteForm').reset();
+            document.getElementById('novoUtenteModal').classList.add('active');
+        }
+
+        function salvarNovoUtente() {
+            const nif = document.getElementById('utenteNIF').value.trim();
+            const nome = document.getElementById('utenteNome').value.trim();
+            const dataNascimento = document.getElementById('utenteDataNascimento').value;
+            const sexo = document.getElementById('utenteSexo').value;
+            const contacto = document.getElementById('utenteContacto').value.trim();
+            const email = document.getElementById('utenteEmail').value.trim();
+            const alergias = document.getElementById('utenteAlergias').value.split(',').map(a => a.trim()).filter(a => a);
+            const patologias = document.getElementById('utentePatologias').value.split(',').map(p => p.trim()).filter(p => p);
+            const medicacao = document.getElementById('utenteMedicacao').value.split(',').map(m => m.trim()).filter(m => m);
+            
+            if (!nif || !nome || !dataNascimento || !sexo || !contacto) {
+                alert('Preencha todos os campos obrigatórios');
+                return;
+            }
+
+            if (nif.length !== 9) {
+                alert('NIF deve ter 9 dígitos');
+                return;
+            }
+            
+            if (state.utentes.find(u => u.nif === nif)) {
+                alert('Já existe um utente com este NIF');
+                return;
+            }
+            
+            state.utentes.push({
+                nif,
+                nome,
+                dataNascimento,
+                sexo,
+                contacto,
+                email,
+                alergias,
+                patologias,
+                medicacao,
+                createdAt: new Date().toISOString()
+            });
+            
+            saveData();
+            closeModal('novoUtenteModal');
+            renderUtentes();
+            updateDashboard();
+        }
+
+        function verFichaUtente(nif) {
+            const utente = state.utentes.find(u => u.nif === nif);
+            if (!utente) return;
+            
+            const consultasUtente = state.consultas.filter(c => c.utenteNIF === nif).reverse();
+            const idade = new Date().getFullYear() - new Date(utente.dataNascimento).getFullYear();
+            
+            const html = `
+                <div class="card">
+                    <h4 class="mb-2">Dados Pessoais</h4>
+                    <div class="grid-2">
+                        <div>
+                            <p><strong>Nome:</strong> ${utente.nome}</p>
+                            <p><strong>NIF:</strong> ${utente.nif}</p>
+                            <p><strong>Idade:</strong> ${idade} anos</p>
+                            <p><strong>Data Nascimento:</strong> ${new Date(utente.dataNascimento).toLocaleDateString('pt-PT')}</p>
+                        </div>
+                        <div>
+                            <p><strong>Sexo:</strong> ${utente.sexo}</p>
+                            <p><strong>Contacto:</strong> ${utente.contacto}</p>
+                            <p><strong>Email:</strong> ${utente.email || 'Não fornecido'}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h4 class="mb-2">⚠️ Alergias</h4>
+                    <p>${utente.alergias.length > 0 ? utente.alergias.join(', ') : 'Nenhuma alergia registada'}</p>
+                </div>
+
+                <div class="card">
+                    <h4 class="mb-2">🏥 Patologias Crónicas</h4>
+                    <p>${utente.patologias.length > 0 ? utente.patologias.join(', ') : 'Nenhuma patologia registada'}</p>
+                </div>
+
+                <div class="card">
+                    <h4 class="mb-2">💊 Medicação Habitual</h4>
+                    <p>${utente.medicacao && utente.medicacao.length > 0 ? utente.medicacao.join(', ') : 'Nenhuma medicação registada'}</p>
+                </div>
+
+                <div class="card">
+                    <h4 class="mb-2">📋 Histórico de Consultas (${consultasUtente.length})</h4>
+                    ${consultasUtente.length === 0 ? '<p class="text-secondary">Nenhuma consulta realizada</p>' : `
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Tipo</th>
+                                        <th>Farmacêutico</th>
+                                        <th>Estado</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${consultasUtente.map(c => {
+                                        const tipo = state.tiposConsulta.find(t => t.id === c.tipo);
+                                        const data = new Date(c.data).toLocaleString('pt-PT', { 
+                                            day: '2-digit', 
+                                            month: '2-digit', 
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        });
+                                        return `
+                                            <tr>
+                                                <td>${data}</td>
+                                                <td>${tipo?.nome || c.tipo}</td>
+                                                <td>${c.farmaceutico}</td>
+                                                <td><span class="badge badge-${c.estado === 'concluida' ? 'success' : 'warning'}">${c.estado}</span></td>
+                                                <td>
+                                                    <button class="btn btn-secondary btn-small" onclick="abrirConsulta('${c.id}')">Ver</button>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `}
+                </div>
+            `;
+            
+            document.getElementById('fichaUtenteContent').innerHTML = html;
+            document.getElementById('fichaUtenteModal').classList.add('active');
+        }
+
+        // Consultas
+        function renderConsultas() {
+            const tbody = document.getElementById('consultasTableBody');
+            
+            if (state.consultas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-secondary">Nenhuma consulta registada</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = state.consultas.slice().reverse().map(c => {
+                const utente = state.utentes.find(u => u.nif === c.utenteNIF);
+                const tipo = state.tiposConsulta.find(t => t.id === c.tipo);
+                const data = new Date(c.data).toLocaleString('pt-PT', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                return `
+                    <tr>
+                        <td>${data}</td>
+                        <td>${utente?.nome || 'Desconhecido'}</td>
+                        <td>${tipo?.nome || c.tipo}</td>
+                        <td>${c.farmaceutico}</td>
+                        <td><span class="badge badge-${c.estado === 'concluida' ? 'success' : 'warning'}">${c.estado}</span></td>
+                        <td>
+                            <button class="btn btn-secondary btn-small" onclick="abrirConsulta('${c.id}')">Abrir</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function novaConsulta() {
+            state.currentConsulta = {
+                questionario: {},
+                testes: [],
+                suplementos: [],
+                medidas: [],
+                exames: [],
+                observacoes: '',
+                proximaConsulta: null
+            };
+
+            document.getElementById('consultaModalTitle').textContent = 'Nova Consulta';
+            document.getElementById('consultaStep1').classList.remove('hidden');
+            document.getElementById('consultaStep2').classList.add('hidden');
+            document.getElementById('btnAvancar').classList.remove('hidden');
+            document.getElementById('btnFinalizar').classList.add('hidden');
+            
+            const selectUtente = document.getElementById('consultaUtente');
+            selectUtente.innerHTML = '<option value="">Selecione um utente</option>' +
+                state.utentes.map(u => `<option value="${u.nif}">${u.nome} (${u.nif})</option>`).join('');
+            
+            const selectTipo = document.getElementById('consultaTipo');
+            const tiposPermitidos = state.currentUser.role === 'admin' 
+                ? state.tiposConsulta.filter(t => t.ativo)
+                : state.tiposConsulta.filter(t => t.ativo && (state.currentUser.permissoes || []).includes(t.id));
+            
+            selectTipo.innerHTML = '<option value="">Selecione o tipo</option>' +
+                tiposPermitidos.map(t => `<option value="${t.id}">${t.nome}</option>`).join('');
+            
+            document.getElementById('consultaData').value = new Date().toISOString().slice(0, 16);
+            document.getElementById('alertasUtente').classList.add('hidden');
+            
+            document.getElementById('novaConsultaModal').classList.add('active');
+        }
+
+        function carregarDadosUtente() {
+            const nif = document.getElementById('consultaUtente').value;
+            if (!nif) {
+                document.getElementById('alertasUtente').classList.add('hidden');
+                return;
+            }
+            
+            const utente = state.utentes.find(u => u.nif === nif);
+            if (!utente) return;
+            
+            let alertas = [];
+            if (utente.alergias.length > 0) {
+                alertas.push(`⚠️ <strong>Alergias:</strong> ${utente.alergias.join(', ')}`);
+            }
+            if (utente.patologias.length > 0) {
+                alertas.push(`🏥 <strong>Patologias:</strong> ${utente.patologias.join(', ')}`);
+            }
+            if (utente.medicacao && utente.medicacao.length > 0) {
+                alertas.push(`💊 <strong>Medicação Habitual:</strong> ${utente.medicacao.join(', ')}`);
+            }
+            
+            if (alertas.length > 0) {
+                document.getElementById('alertasUtente').innerHTML = `
+                    <div class="info-box info-box-warning">
+                        ${alertas.join('<br>')}
+                    </div>
+                `;
+                document.getElementById('alertasUtente').classList.remove('hidden');
+            } else {
+                document.getElementById('alertasUtente').classList.add('hidden');
+            }
+        }
+
+        function avancarConsulta() {
+// Verificar se existe consulta anterior do mesmo utente + mesmo tipo
+const consultasAnteriores = state.consultas.filter(c =>
+    c.utenteNIF === state.currentConsulta.utenteNIF &&
+    c.tipoConsultaId === state.currentConsulta.tipoConsultaId &&
+    c.id !== state.currentConsulta.id &&
+    c.estado === 'concluida'
+).sort((a, b) => new Date(b.data) - new Date(a.data));
+
+if (consultasAnteriores.length > 0) {
+    const ultima = consultasAnteriores[0];
+    state.currentConsulta._respostasAnteriores = ultima.respostas || {};
+    state.currentConsulta._dataUltimaConsulta = ultima.data;
+} else {
+    state.currentConsulta._respostasAnteriores = null;
+    state.currentConsulta._dataUltimaConsulta = null;
+}
+            const utenteNIF = document.getElementById('consultaUtente').value;
+            const tipoId = document.getElementById('consultaTipo').value;
+            const data = document.getElementById('consultaData').value;
+            
+            if (!utenteNIF || !tipoId || !data) {
+                alert('Preencha todos os campos obrigatórios');
+                return;
+            }
+            
+            state.currentConsulta.utenteNIF = utenteNIF;
+            state.currentConsulta.tipo = tipoId;
+            state.currentConsulta.data = data;
+            
+            const tipo = state.tiposConsulta.find(t => t.id === tipoId);
+            const protocolo = state.protocolos.find(p => p.tipoConsultaId === tipoId);
+            
+            // Carregar testes POC recomendados
+            state.currentConsulta.testes = (tipo.pocDefaultIds || []).map(testePOCId => {
+                const testePOC = state.testesPOC.find(t => t.id === testePOCId);
+                return {
+                    testePOCId,
+                    nome: testePOC?.nome || testePOCId,
+                    valores: {},
+                    observacoes: ''
+                };
+            });
+            
+            // Carregar suplementos, medidas e exames do protocolo
+            if (protocolo) {
+                state.currentConsulta.suplementos = JSON.parse(JSON.stringify(protocolo.suplementos || []));
+                state.currentConsulta.medidas = JSON.parse(JSON.stringify(protocolo.medidas || []));
+                state.currentConsulta.exames = JSON.parse(JSON.stringify(protocolo.exames || []));
+            }
+            
+            document.getElementById('consultaStep1').classList.add('hidden');
+            document.getElementById('consultaStep2').classList.remove('hidden');
+            document.getElementById('btnAvancar').classList.add('hidden');
+            document.getElementById('btnFinalizar').classList.remove('hidden');
+            
+            renderQuestionario();
+            renderTestesConsulta();
+            renderGuiaConsulta();
+        }
+
+function renderQuestionario() {
+    const tipoId = state.currentConsulta.tipo;
+    const tipo = state.tiposConsulta.find(t => t.id === tipoId);
+    
+    if (!tipo || !tipo.questionario || tipo.questionario.length === 0) {
+        document.getElementById('questionarioContent').innerHTML = `
+            <div class="info-box">
+                <p>Este tipo de consulta não possui questionário configurado.</p>
+                <p>Configure o questionário na seção Administração > Tipos de Consulta.</p>
+            </div>
+        `;
+        return;
+    }
+
+    const respostasAnteriores = state.currentConsulta._respostasAnteriores || {};
+    const dataAnterior = state.currentConsulta._dataUltimaConsulta
+        ? new Date(state.currentConsulta._dataUltimaConsulta).toLocaleDateString('pt-PT')
+        : null;
+
+    // Aviso no topo se houver consulta anterior
+    const avisoAnterior = dataAnterior ? `
+        <div class="info-box info-box-warning" style="margin-bottom: 1rem;">
+            <div class="info-box-title">⚠️ Consulta anterior encontrada (${dataAnterior})</div>
+            <div class="info-box-text">As respostas anteriores estão destacadas a amarelo. Confirme se ainda são válidas e corrija se necessário.</div>
+        </div>
+    ` : '';
+    
+    const html = tipo.questionario.map((campo, idx) => {
+        let inputHtml = '';
+        const valorAtual = state.currentConsulta.questionario[`campo_${idx}`] || '';
+        const valorAnterior = respostasAnteriores[`campo_${idx}`] || '';
+
+        // Se não há resposta atual mas há anterior, usa a anterior com destaque
+        const usandoAnterior = !valorAtual && !!valorAnterior;
+        const valorMostrar = valorAtual || valorAnterior;
+        const estiloAnterior = usandoAnterior
+            ? 'background: #fefce8; border-color: #f59e0b; border-width: 2px;'
+            : '';
+        const labelAnterior = usandoAnterior
+            ? `<span style="font-size:0.72rem; color:#d97706; display:block; margin-bottom:0.25rem;">🕐 Resposta da consulta anterior — confirme se ainda é válida</span>`
+            : '';
+        
+        switch (campo.tipo) {
+            case 'texto':
+                inputHtml = `
+                    ${labelAnterior}
+                    <input type="text" class="form-input" id="quest_${idx}" 
+                           value="${valorMostrar}" 
+                           style="${estiloAnterior}"
+                           oninput="this.style=''; state.currentConsulta.questionario['campo_${idx}'] = this.value;"
+                           ${campo.obrigatorio ? 'required' : ''}>`;
+                break;
+            case 'numero':
+                inputHtml = `
+                    ${labelAnterior}
+                    <input type="number" class="form-input" id="quest_${idx}" 
+                           value="${valorMostrar}"
+                           style="${estiloAnterior}"
+                           oninput="this.style=''; state.currentConsulta.questionario['campo_${idx}'] = this.value;"
+                           ${campo.obrigatorio ? 'required' : ''}>`;
+                break;
+            case 'data':
+                inputHtml = `
+                    ${labelAnterior}
+                    <input type="date" class="form-input" id="quest_${idx}" 
+                           value="${valorMostrar}"
+                           style="${estiloAnterior}"
+                           oninput="this.style=''; state.currentConsulta.questionario['campo_${idx}'] = this.value;"
+                           ${campo.obrigatorio ? 'required' : ''}>`;
+                break;
+            case 'textarea':
+                inputHtml = `
+                    ${labelAnterior}
+                    <textarea class="form-textarea" id="quest_${idx}" rows="3"
+                              style="${estiloAnterior}"
+                              oninput="this.style=''; state.currentConsulta.questionario['campo_${idx}'] = this.value;"
+                              ${campo.obrigatorio ? 'required' : ''}>${valorMostrar}</textarea>`;
+                break;
+            case 'escolha':
+                inputHtml = `
+                    ${labelAnterior}
+                    <select class="form-select" id="quest_${idx}" 
+                            style="${estiloAnterior}"
+                            onchange="this.style=''; state.currentConsulta.questionario['campo_${idx}'] = this.value;"
+                            ${campo.obrigatorio ? 'required' : ''}>
+                        <option value="">Selecione...</option>
+                        ${campo.opcoes.map(opt => `<option value="${opt}" ${valorMostrar === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                    </select>`;
+                break;
+            case 'multipla':
+                const valoresAtuais = valorMostrar ? valorMostrar.split('|||') : [];
+                inputHtml = `
+                    ${labelAnterior}
+                    <div class="checkbox-group" style="${estiloAnterior ? 'padding:0.5rem; border-radius:8px; ' + estiloAnterior : ''}">
+                        ${campo.opcoes.map((opt, optIdx) => `
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="quest_${idx}_${optIdx}" 
+                                       value="${opt}" ${valoresAtuais.includes(opt) ? 'checked' : ''}>
+                                <span>${opt}</span>
+                            </label>
+                        `).join('')}
+                    </div>`;
+                break;
+        }
+        
+        return `
+            <div class="form-group">
+                <label class="form-label">
+                    ${campo.pergunta}${campo.obrigatorio ? ' *' : ''}
+                </label>
+                ${inputHtml}
+            </div>
+        `;
+    }).join('');
+    
+    document.getElementById('questionarioContent').innerHTML = avisoAnterior + html;
+    
+    // Listeners para checkboxes
+    tipo.questionario.forEach((campo, idx) => {
+        if (campo.tipo === 'multipla') {
+            campo.opcoes.forEach((opt, optIdx) => {
+                const checkbox = document.getElementById(`quest_${idx}_${optIdx}`);
+                if (checkbox) {
+                    checkbox.addEventListener('change', () => {
+                        const checkboxes = document.querySelectorAll(`[id^="quest_${idx}_"]`);
+                        const valores = Array.from(checkboxes)
+                            .filter(cb => cb.checked)
+                            .map(cb => cb.value);
+                        state.currentConsulta.questionario[`campo_${idx}`] = valores.join('|||');
+                        // Remover destaque amarelo ao alterar
+                        const grupo = checkbox.closest('.checkbox-group');
+                        if (grupo) grupo.style = '';
+                    });
+                }
+            });
+        }
+    });
+}
+
+
+        function renderTestesConsulta() {
+            const container = document.getElementById('testesContent');
+            
+            if (state.currentConsulta.testes.length === 0) {
+                container.innerHTML = '<p class="text-secondary">Nenhum teste adicionado. Clique em "+ Adicionar Teste" para começar.</p>';
+                return;
+            }
+            
+            container.innerHTML = state.currentConsulta.testes.map((teste, idx) => {
+                const testePOC = state.testesPOC.find(t => t.id === teste.testePOCId);
+                if (!testePOC) return '';
+                
+                return `
+                    <div class="item-card">
+                        <div class="item-header">
+                            <span class="item-title">${testePOC.nome}</span>
+                            <button class="icon-btn delete" onclick="removerTestePOC(${idx})">🗑️</button>
+                        </div>
+                        <div>
+                            ${testePOC.campos.map((campo, campoIdx) => {
+                                const valor = teste.valores[campo.nome] || '';
+                                const interpretacao = valor ? interpretarValor(parseFloat(valor), campo.min, campo.max) : '';
+                                return `
+                                    <div class="field-row">
+                                        <div class="form-group">
+                                            <label class="form-label">${campo.nome} (${campo.unidade})</label>
+                                            <input type="number" 
+                                                   class="form-input" 
+                                                   value="${valor}"
+                                                   onchange="atualizarValorTeste(${idx}, '${campo.nome}', this.value)"
+                                                   placeholder="Min: ${campo.min}, Max: ${campo.max}">
+                                        </div>
+                                        ${interpretacao ? `<span class="badge badge-${interpretacao.classe}">${interpretacao.texto}</span>` : ''}
+                                    </div>
+                                `;
+                            }).join('')}
+                            <div class="form-group mt-2">
+                                <label class="form-label text-small">Observações</label>
+                                <textarea class="form-textarea" 
+                                          rows="2" 
+                                          onchange="state.currentConsulta.testes[${idx}].observacoes = this.value">${teste.observacoes || ''}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function interpretarValor(valor, min, max) {
+            if (valor < min) return { classe: 'error', texto: '⚠️ Abaixo do normal' };
+            if (valor > max) return { classe: 'warning', texto: '⚠️ Acima do normal' };
+            return { classe: 'success', texto: '✓ Normal' };
+        }
+
+        function atualizarValorTeste(idx, campo, valor) {
+            state.currentConsulta.testes[idx].valores[campo] = valor;
+            renderTestesConsulta();
+        }
+
+        function adicionarTestePOC() {
+            const testesDisponiveis = state.testesPOC.filter(t => t.ativo);
+            const testesJaAdicionados = state.currentConsulta.testes.map(t => t.testePOCId);
+            const testesRestantes = testesDisponiveis.filter(t => !testesJaAdicionados.includes(t.id));
+            
+            if (testesRestantes.length === 0) {
+                alert('Todos os testes disponíveis já foram adicionados');
+                return;
+            }
+            
+            const escolha = prompt('Escolha um teste:\n\n' + 
+                testesRestantes.map((t, i) => `${i + 1}. ${t.nome}`).join('\n'));
+            
+            const idx = parseInt(escolha) - 1;
+            if (idx >= 0 && idx < testesRestantes.length) {
+                const teste = testesRestantes[idx];
+                state.currentConsulta.testes.push({
+                    testePOCId: teste.id,
+                    nome: teste.nome,
+                    valores: {},
+                    observacoes: ''
+                });
+                renderTestesConsulta();
+            }
+        }
+
+        function removerTestePOC(idx) {
+            if (confirm('Remover este teste?')) {
+                state.currentConsulta.testes.splice(idx, 1);
+                renderTestesConsulta();
+            }
+        }
+
+        function renderGuiaConsulta() {
+            renderSuplementsConsulta();
+            renderMedidasConsulta();
+            renderExamesConsulta();
+            document.getElementById('guiaObservacoes').value = state.currentConsulta.observacoes || '';
+            document.getElementById('guiaProximaConsulta').value = state.currentConsulta.proximaConsulta || '';
+        }
+
+        function renderSuplementsConsulta(suplementos) {
+    const container = document.getElementById('consultaSuplemetos');
+    if (!container) return;
+
+    if (!suplementos || suplementos.length === 0) {
+        container.innerHTML = '<p class="text-secondary text-small">Nenhum suplemento adicionado</p>';
+        return;
+    }
+
+    container.innerHTML = suplementos.map((sup, idx) => `
+        <div class="item-card">
+            <div class="item-header">
+                <span class="item-title">${sup.nome || 'Suplemento'}</span>
+                <div class="item-actions">
+                    <button type="button" class="btn btn-secondary btn-small" onclick="escolherSuplementoCatalogo(${idx})">📋 Catálogo</button>
+                    <button type="button" class="icon-btn delete" onclick="removerSuplementoConsulta(${idx})">🗑️</button>
+                </div>
+            </div>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label class="form-label text-small">Nome</label>
+                    <input type="text" class="form-input" value="${sup.nome || ''}"
+                           onchange="state.currentConsulta.suplementos[${idx}].nome = this.value">
+                </div>
+                <div class="form-group">
+                    <label class="form-label text-small">Marca</label>
+                    <input type="text" class="form-input" value="${sup.marca || ''}"
+                           onchange="state.currentConsulta.suplementos[${idx}].marca = this.value">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label text-small">Ingredientes</label>
+                <textarea class="form-textarea" rows="2"
+                          onchange="state.currentConsulta.suplementos[${idx}].ingredientes = this.value">${sup.ingredientes || ''}</textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label text-small">Utilizações</label>
+                <textarea class="form-textarea" rows="2"
+                          onchange="state.currentConsulta.suplementos[${idx}].utilizacoes = this.value">${sup.utilizacoes || ''}</textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label text-small">Posologia</label>
+                <textarea class="form-textarea" rows="2"
+                          onchange="state.currentConsulta.suplementos[${idx}].posologia = this.value">${sup.posologia || ''}</textarea>
+            </div>
+        </div>
+    `).join('');
+}
+
+function adicionarSuplementoConsulta() {
+    if (!state.currentConsulta.suplementos) {
+        state.currentConsulta.suplementos = [];
+    }
+    state.currentConsulta.suplementos.push({
+        nome: '',
+        marca: '',
+        ingredientes: '',
+        utilizacoes: '',
+        posologia: ''
+    });
+    renderSuplementsConsulta(state.currentConsulta.suplementos);
+}
+
+function removerSuplementoConsulta(idx) {
+    state.currentConsulta.suplementos.splice(idx, 1);
+    renderSuplementsConsulta(state.currentConsulta.suplementos);
+}
+
+function escolherSuplementoCatalogo(idx) {
+    const ativos = (state.suplementos || []).filter(s => s.ativo);
+    if (ativos.length === 0) {
+        alert('Ainda não existem suplementos no catálogo.\nCria primeiro em Administração → Suplementos.');
+        return;
+    }
+
+    // Criar modal de pesquisa dinâmico
+    const modalHtml = `
+        <div id="catalogoSuplementoModal" class="modal active">
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">💊 Escolher Suplemento</h3>
+                    <button class="close-btn" onclick="document.getElementById('catalogoSuplementoModal').remove()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="search-box" style="margin-bottom: 1rem;">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" id="catalogoSearch"
+                               placeholder="Pesquisar por nome, marca ou princípio ativo..."
+                               oninput="filtrarCatalogo(${idx})" autofocus>
+                    </div>
+                    <div id="catalogoResultados" style="max-height: 400px; overflow-y: auto;">
+                        ${renderCatalogoLista(ativos, idx)}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    setTimeout(() => document.getElementById('catalogoSearch').focus(), 100);
+}
+
+function renderCatalogoLista(lista, idx) {
+    if (lista.length === 0) {
+        return '<p class="text-secondary text-small text-center">Nenhum suplemento encontrado</p>';
+    }
+    return lista.map(s => `
+        <div class="item-card" style="cursor:pointer; margin-bottom: 0.5rem;"
+             onclick="selecionarSupCatalogo('${s.id}', ${idx})">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div>
+                    <strong>${s.nome}</strong>${s.marca ? ' <span class="text-secondary text-small">— ' + s.marca + '</span>' : ''}
+                    ${s.ingredientes ? '<p class="text-small text-secondary" style="margin-top: 0.25rem;">🧪 ' + s.ingredientes.substring(0, 80) + (s.ingredientes.length > 80 ? '...' : '') + '</p>' : ''}
+                    ${s.utilizacoes ? '<p class="text-small text-secondary">📋 ' + s.utilizacoes.substring(0, 80) + (s.utilizacoes.length > 80 ? '...' : '') + '</p>' : ''}
+                </div>
+                <button class="btn btn-primary btn-small" style="white-space: nowrap; margin-left: 1rem;">Selecionar</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function filtrarCatalogo(idx) {
+    const termo = document.getElementById('catalogoSearch').value.toLowerCase();
+    const ativos = (state.suplementos || []).filter(s => s.ativo);
+    const filtrados = ativos.filter(s =>
+        s.nome.toLowerCase().includes(termo) ||
+        (s.marca || '').toLowerCase().includes(termo) ||
+        (s.ingredientes || '').toLowerCase().includes(termo) ||
+        (s.utilizacoes || '').toLowerCase().includes(termo)
+    );
+    document.getElementById('catalogoResultados').innerHTML = renderCatalogoLista(filtrados, idx);
+}
+
+function selecionarSupCatalogo(supId, idx) {
+    const sup = state.suplementos.find(s => s.id === supId);
+    if (!sup) return;
+
+    state.currentConsulta.suplementos[idx] = {
+        ...state.currentConsulta.suplementos[idx],
+        nome: sup.nome,
+        marca: sup.marca || '',
+        ingredientes: sup.ingredientes || '',
+        utilizacoes: sup.utilizacoes || '',
+        posologia: sup.posologia || ''
+    };
+
+    document.getElementById('catalogoSuplementoModal').remove();
+    renderSuplementsConsulta(state.currentConsulta.suplementos);
+}
+        function adicionarSuplemento() {
+            state.currentConsulta.suplementos.push({
+                nome: '',
+                link: '',
+                posologia: '',
+                duracao: '',
+                indicacao: ''
+            });
+            renderSuplementsConsulta();
+        }
+
+        function removerSuplemento(idx) {
+            state.currentConsulta.suplementos.splice(idx, 1);
+            renderSuplementsConsulta();
+        }
+
+        function renderMedidasConsulta() {
+            const container = document.getElementById('medidasContent');
+            if (state.currentConsulta.medidas.length === 0) {
+                container.innerHTML = '<p class="text-secondary text-small">Nenhuma medida adicionada</p>';
+                return;
+            }
+            
+            container.innerHTML = state.currentConsulta.medidas.map((medida, idx) => `
+                <div class="item-card">
+                    <div class="item-header">
+                        <input type="text" class="form-input" value="${medida}" 
+                               onchange="state.currentConsulta.medidas[${idx}] = this.value"
+                               placeholder="Descreva a medida...">
+                        <button class="icon-btn delete" onclick="removerMedida(${idx})">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function adicionarMedida() {
+            state.currentConsulta.medidas.push('');
+            renderMedidasConsulta();
+        }
+
+        function removerMedida(idx) {
+            state.currentConsulta.medidas.splice(idx, 1);
+            renderMedidasConsulta();
+        }
+
+        function renderExamesConsulta() {
+            const container = document.getElementById('examesContent');
+            if (state.currentConsulta.exames.length === 0) {
+                container.innerHTML = '<p class="text-secondary text-small">Nenhum exame adicionado</p>';
+                return;
+            }
+            
+            container.innerHTML = state.currentConsulta.exames.map((exame, idx) => `
+                <div class="item-card">
+                    <div class="item-header">
+                        <span class="item-title">${exame.nome || 'Exame'}</span>
+                        <button class="icon-btn delete" onclick="removerExame(${idx})">🗑️</button>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label text-small">Nome do Exame</label>
+                            <input type="text" class="form-input" value="${exame.nome || ''}" 
+                                   onchange="state.currentConsulta.exames[${idx}].nome = this.value; renderExamesConsulta()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label text-small">Laboratório</label>
+                            <input type="text" class="form-input" value="${exame.laboratorio || ''}" 
+                                   placeholder="Ex: Unilabs, Affidea"
+                                   onchange="state.currentConsulta.exames[${idx}].laboratorio = this.value">
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label text-small">Indicação</label>
+                            <input type="text" class="form-input" value="${exame.indicacao || ''}" 
+                                   placeholder="Motivo do exame"
+                                   onchange="state.currentConsulta.exames[${idx}].indicacao = this.value">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label text-small">Urgência</label>
+                            <select class="form-select" onchange="state.currentConsulta.exames[${idx}].urgencia = this.value">
+                                <option value="rotina" ${exame.urgencia === 'rotina' ? 'selected' : ''}>Rotina</option>
+                                <option value="breve" ${exame.urgencia === 'breve' ? 'selected' : ''}>Breve Prazo</option>
+                                <option value="urgente" ${exame.urgencia === 'urgente' ? 'selected' : ''}>Urgente</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function adicionarExame() {
+            state.currentConsulta.exames.push({
+                nome: '',
+                laboratorio: '',
+                indicacao: '',
+                urgencia: 'rotina'
+            });
+            renderExamesConsulta();
+        }
+
+        function removerExame(idx) {
+            state.currentConsulta.exames.splice(idx, 1);
+            renderExamesConsulta();
+        }
+
+        function finalizarConsulta() {
+            state.currentConsulta.observacoes = document.getElementById('guiaObservacoes').value;
+            state.currentConsulta.proximaConsulta = document.getElementById('guiaProximaConsulta').value;
+            
+            const consulta = {
+                id: Date.now().toString(),
+                utenteNIF: state.currentConsulta.utenteNIF,
+                tipo: state.currentConsulta.tipo,
+                data: state.currentConsulta.data,
+                farmaceutico: state.currentUser.nome,
+                estado: 'concluida',
+                questionario: state.currentConsulta.questionario,
+                testes: state.currentConsulta.testes,
+                guia: {
+                    suplementos: state.currentConsulta.suplementos,
+                    medidas: state.currentConsulta.medidas,
+                    exames: state.currentConsulta.exames,
+                    observacoes: state.currentConsulta.observacoes,
+                    proximaConsulta: state.currentConsulta.proximaConsulta
+                },
+                createdAt: new Date().toISOString()
+            };
+            
+            state.consultas.push(consulta);
+            saveData();
+            closeModal('novaConsultaModal');
+            updateDashboard();
+            alert('Consulta guardada com sucesso!');
+        }
+
+        function abrirConsulta(id) {
+            const consulta = state.consultas.find(c => c.id === id);
+            if (!consulta) return;
+            
+            alert('Visualização completa da consulta será implementada com impressão do guia terapêutico.');
+        }
+
+        // Admin
+        function renderAdmin() {
+            if (state.currentUser.role !== 'admin') return;
+            
+            document.getElementById('farmNome').value = state.config.nome;
+            document.getElementById('farmDiretora').value = state.config.diretora;
+            document.getElementById('farmMorada').value = state.config.morada;
+            document.getElementById('farmTelefone').value = state.config.telefone;
+            document.getElementById('farmEmail').value = state.config.email;
+            document.getElementById('farmWebsite').value = state.config.website;
+        }
+
+        function salvarDadosFarmacia() {
+            state.config.nome = document.getElementById('farmNome').value;
+            state.config.diretora = document.getElementById('farmDiretora').value;
+            state.config.morada = document.getElementById('farmMorada').value;
+            state.config.telefone = document.getElementById('farmTelefone').value;
+            state.config.email = document.getElementById('farmEmail').value;
+            state.config.website = document.getElementById('farmWebsite').value;
+            
+            document.querySelector('.logo #farmNome').textContent = state.config.nome;
+            saveData();
+            alert('Dados da farmácia atualizados com sucesso!');
+        }
+
+        function renderTiposConsulta() {
+            const container = document.getElementById('tiposConsultaList');
+            container.innerHTML = state.tiposConsulta.map(t => `
+                <div style="padding: 1rem; border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 1rem; flex: 1;">
+                        <div style="width: 20px; height: 20px; background: ${t.cor}; border-radius: 4px;"></div>
+                        <div>
+                            <div style="font-weight: 500;">${t.nome}</div>
+                            <div class="text-small text-secondary">
+                                ${(t.pocDefaultIds || []).length} testes POC • ${(t.questionario || []).length} perguntas
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <span class="badge badge-${t.ativo ? 'success' : 'error'}">${t.ativo ? 'Ativa' : 'Inativa'}</span>
+                        <button class="btn btn-secondary btn-small" onclick="editarTipoConsulta('${t.id}')">Editar</button>
+                        <button class="btn btn-danger btn-small" onclick="toggleTipoAtivo('${t.id}')">${t.ativo ? 'Desativar' : 'Ativar'}</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleTipoAtivo(id) {
+            const tipo = state.tiposConsulta.find(t => t.id === id);
+            if (tipo) {
+                tipo.ativo = !tipo.ativo;
+                saveData();
+                renderTiposConsulta();
+            }
+        }
+
+        let questionarioCounter = 0;
+
+        function novoTipoConsulta() {
+            document.getElementById('tipoConsultaModalTitle').textContent = 'Novo Tipo de Consulta';
+            document.getElementById('tipoConsultaForm').reset();
+            document.getElementById('editTipoId').value = '';
+            document.getElementById('tipoConsultaCor').value = '#047857';
+            
+            const testesContainer = document.getElementById('testesAssociados');
+            testesContainer.innerHTML = state.testesPOC.filter(t => t.ativo).map(t => `
+                <label class="checkbox-label">
+                    <input type="checkbox" value="${t.id}">
+                    <span>${t.nome}</span>
+                </label>
+            `).join('');
+            
+            document.getElementById('questionarioFields').innerHTML = '';
+            questionarioCounter = 0;
+            
+            document.getElementById('tipoConsultaModal').classList.add('active');
+        }
+
+        function editarTipoConsulta(id) {
+            const tipo = state.tiposConsulta.find(t => t.id === id);
+            if (!tipo) return;
+            
+            document.getElementById('tipoConsultaModalTitle').textContent = 'Editar Tipo de Consulta';
+            document.getElementById('editTipoId').value = tipo.id;
+            document.getElementById('tipoConsultaNome').value = tipo.nome;
+            document.getElementById('tipoConsultaCor').value = tipo.cor;
+            
+            const testesContainer = document.getElementById('testesAssociados');
+            testesContainer.innerHTML = state.testesPOC.filter(t => t.ativo).map(t => `
+                <label class="checkbox-label">
+                    <input type="checkbox" value="${t.id}" ${(tipo.pocDefaultIds || []).includes(t.id) ? 'checked' : ''}>
+                    <span>${t.nome}</span>
+                </label>
+            `).join('');
+            
+            const questionarioContainer = document.getElementById('questionarioFields');
+            questionarioContainer.innerHTML = '';
+            questionarioCounter = 0;
+            
+            if (tipo.questionario && tipo.questionario.length > 0) {
+                tipo.questionario.forEach(campo => {
+                    adicionarCampoQuestionarioComDados(campo);
+                });
+            }
+            
+            document.getElementById('tipoConsultaModal').classList.add('active');
+        }
+
+        function adicionarCampoQuestionario() {
+            adicionarCampoQuestionarioComDados({
+                tipo: 'texto',
+                pergunta: '',
+                obrigatorio: false,
+                opcoes: []
+            });
+        }
+
+        function adicionarCampoQuestionarioComDados(campo) {
+            const container = document.getElementById('questionarioFields');
+            const id = questionarioCounter++;
+            
+            const div = document.createElement('div');
+            div.className = 'item-card';
+            div.dataset.fieldId = id;
+            div.innerHTML = `
+                <div class="item-header">
+                    <span class="item-title">Pergunta ${id + 1}</span>
+                    <button type="button" class="icon-btn delete" onclick="this.parentElement.parentElement.remove()">🗑️</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Pergunta</label>
+                    <input type="text" class="pergunta-texto form-input" value="${campo.pergunta || ''}" placeholder="Digite a pergunta...">
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Tipo de Resposta</label>
+                        <select class="pergunta-tipo form-select" onchange="atualizarOpcoesQuestionario(${id})">
+                            <option value="texto" ${campo.tipo === 'texto' ? 'selected' : ''}>Texto Livre</option>
+                            <option value="numero" ${campo.tipo === 'numero' ? 'selected' : ''}>Número</option>
+                            <option value="data" ${campo.tipo === 'data' ? 'selected' : ''}>Data</option>
+                            <option value="escolha" ${campo.tipo === 'escolha' ? 'selected' : ''}>Escolha Única</option>
+                            <option value="multipla" ${campo.tipo === 'multipla' ? 'selected' : ''}>Escolha Múltipla</option>
+                            <option value="textarea" ${campo.tipo === 'textarea' ? 'selected' : ''}>Texto Longo</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" class="pergunta-obrigatorio" ${campo.obrigatorio ? 'checked' : ''}>
+                            <span>Campo Obrigatório</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="opcoes-container-${id}" style="display: ${campo.tipo === 'escolha' || campo.tipo === 'multipla' ? 'block' : 'none'};">
+                    <label class="form-label text-small">Opções (uma por linha)</label>
+                    <textarea class="pergunta-opcoes form-textarea" rows="3" placeholder="Opção 1\nOpção 2\nOpção 3">${(campo.opcoes || []).join('\n')}</textarea>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        function atualizarOpcoesQuestionario(id) {
+            const card = document.querySelector(`[data-field-id="${id}"]`);
+            const tipo = card.querySelector('.pergunta-tipo').value;
+            const opcoesContainer = card.querySelector(`.opcoes-container-${id}`);
+            
+            if (tipo === 'escolha' || tipo === 'multipla') {
+                opcoesContainer.style.display = 'block';
+            } else {
+                opcoesContainer.style.display = 'none';
+            }
+        }
+
+        function salvarTipoConsulta() {
+            const editId = document.getElementById('editTipoId').value;
+            const nome = document.getElementById('tipoConsultaNome').value.trim();
+            const cor = document.getElementById('tipoConsultaCor').value;
+            
+            if (!nome) {
+                alert('Preencha o nome do tipo de consulta');
+                return;
+            }
+            
+            const testesAssociados = Array.from(document.querySelectorAll('#testesAssociados input:checked'))
+                .map(cb => cb.value);
+            
+            const questionario = [];
+            document.querySelectorAll('#questionarioFields .item-card').forEach(card => {
+                const pergunta = card.querySelector('.pergunta-texto').value.trim();
+                const tipo = card.querySelector('.pergunta-tipo').value;
+                const obrigatorio = card.querySelector('.pergunta-obrigatorio').checked;
+                
+                if (pergunta) {
+                    const campo = {
+                        pergunta,
+                        tipo,
+                        obrigatorio,
+                        opcoes: []
+                    };
+                    
+                    if (tipo === 'escolha' || tipo === 'multipla') {
+                        const opcoesTexto = card.querySelector('.pergunta-opcoes').value;
+                        campo.opcoes = opcoesTexto.split('\n')
+                            .map(opt => opt.trim())
+                            .filter(opt => opt);
+                    }
+                    
+                    questionario.push(campo);
+                }
+            });
+            
+            if (editId) {
+                const tipo = state.tiposConsulta.find(t => t.id === editId);
+                if (tipo) {
+                    tipo.nome = nome;
+                    tipo.cor = cor;
+                    tipo.pocDefaultIds = testesAssociados;
+                    tipo.questionario = questionario;
+                }
+            } else {
+                const novoTipo = {
+                    id: nome.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''),
+                    nome,
+                    cor,
+                    pocDefaultIds: testesAssociados,
+                    questionario,
+                    ativo: true
+                };
+                state.tiposConsulta.push(novoTipo);
+            }
+            
+            saveData();
+            closeModal('tipoConsultaModal');
+            renderTiposConsulta();
+        }
+
+        function renderTestesPOC() {
+            const tbody = document.getElementById('testesTableBody');
+            if (state.testesPOC.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-secondary">Nenhum teste configurado</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = state.testesPOC.map(t => `
+                <tr>
+                    <td>${t.nome}</td>
+                    <td><span class="badge badge-info">${t.tipo === 'unico' ? 'Valor Único' : 'Múltiplos Valores'}</span></td>
+                    <td>${t.campos.length} campo(s)</td>
+                    <td><span class="badge badge-${t.ativo ? 'success' : 'error'}">${t.ativo ? 'Ativo' : 'Inativo'}</span></td>
+                    <td>
+                        <button class="btn btn-secondary btn-small" onclick="editarTestePOC('${t.id}')">Editar</button>
+                        <button class="btn btn-danger btn-small" onclick="toggleTesteAtivo('${t.id}')">${t.ativo ? 'Desativar' : 'Ativar'}</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function novoTestePOC() {
+            document.getElementById('novoTestePOCForm').reset();
+            document.getElementById('camposTestePOC').innerHTML = '';
+            document.getElementById('novoTestePOCModal').classList.add('active');
+        }
+
+        function atualizarCamposTestePOC() {
+            const tipo = document.getElementById('testePOCTipo').value;
+            const container = document.getElementById('camposTestePOC');
+            
+            if (!tipo) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            if (tipo === 'unico') {
+                container.innerHTML = `
+                    <div class="form-group">
+                        <label class="form-label">Unidade *</label>
+                        <input type="text" id="testePOCUnidade" class="form-input" required placeholder="Ex: mg/dL, mmHg, %">
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Valor Mínimo Normal</label>
+                            <input type="number" id="testePOCMin" class="form-input" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Valor Máximo Normal</label>
+                            <input type="number" id="testePOCMax" class="form-input" step="0.01">
+                        </div>
+                    </div>
+                `;
+            } else {
+                adicionarCampoTestePOC();
+            }
+        }
+
+        let camposPOCCounter = 0;
+
+        function adicionarCampoTestePOC() {
+            const container = document.getElementById('camposTestePOC');
+            const id = camposPOCCounter++;
+            
+            const div = document.createElement('div');
+            div.className = 'item-card';
+            div.innerHTML = `
+                <div class="item-header">
+                    <span class="item-title">Campo ${id + 1}</span>
+                    <button type="button" class="icon-btn delete" onclick="this.parentElement.parentElement.remove()">🗑️</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nome do Campo</label>
+                    <input type="text" class="campo-nome form-input" placeholder="Ex: Sistólica, LDL">
+                </div>
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label class="form-label">Unidade</label>
+                        <input type="text" class="campo-unidade form-input" placeholder="mmHg">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Mín Normal</label>
+                        <input type="number" class="campo-min form-input" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Máx Normal</label>
+                        <input type="number" class="campo-max form-input" step="0.01">
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        function salvarTestePOC() {
+            const nome = document.getElementById('testePOCNome').value.trim();
+            const tipo = document.getElementById('testePOCTipo').value;
+            
+            if (!nome || !tipo) {
+                alert('Preencha todos os campos obrigatórios');
+                return;
+            }
+            
+            let campos = [];
+            
+            if (tipo === 'unico') {
+                const unidade = document.getElementById('testePOCUnidade').value.trim();
+                const min = parseFloat(document.getElementById('testePOCMin').value) || 0;
+                const max = parseFloat(document.getElementById('testePOCMax').value) || 999;
+                
+                if (!unidade) {
+                    alert('Defina a unidade do teste');
+                    return;
+                }
+                
+                campos.push({ nome: nome, unidade, min, max });
+            } else {
+                const campoCards = document.querySelectorAll('#camposTestePOC .item-card');
+                campoCards.forEach(card => {
+                    const nomeCampo = card.querySelector('.campo-nome').value.trim();
+                    const unidade = card.querySelector('.campo-unidade').value.trim();
+                    const min = parseFloat(card.querySelector('.campo-min').value) || 0;
+                    const max = parseFloat(card.querySelector('.campo-max').value) || 999;
+                    
+                    if (nomeCampo && unidade) {
+                        campos.push({ nome: nomeCampo, unidade, min, max });
+                    }
+                });
+                
+                if (campos.length === 0) {
+                    alert('Adicione pelo menos um campo ao teste');
+                    return;
+                }
+            }
+            
+            const testePOC = {
+                id: nome.toLowerCase().replace(/\s+/g, '_'),
+                nome,
+                tipo,
+                campos,
+                ativo: true
+            };
+            
+            state.testesPOC.push(testePOC);
+            saveData();
+            closeModal('novoTestePOCModal');
+            renderTestesPOC();
+            updateDashboard();
+        }
+
+        function editarTestePOC(id) {
+            const teste = state.testesPOC.find(t => t.id === id);
+            if (!teste) return;
+            
+            document.getElementById('editTesteId').value = teste.id;
+            document.getElementById('editTestePOCNome').value = teste.nome;
+            document.getElementById('editTestePOCTipo').value = teste.tipo;
+            
+            atualizarCamposEditTestePOC();
+            
+            if (teste.tipo === 'unico' && teste.campos.length > 0) {
+                const campo = teste.campos[0];
+                document.getElementById('editTestePOCUnidade').value = campo.unidade;
+                document.getElementById('editTestePOCMin').value = campo.min;
+                document.getElementById('editTestePOCMax').value = campo.max;
+            } else {
+                const container = document.getElementById('camposEditTestePOC');
+                container.innerHTML = '';
+                teste.campos.forEach(campo => {
+                    const div = document.createElement('div');
+                    div.className = 'item-card';
+                    div.innerHTML = `
+                        <div class="item-header">
+                            <span class="item-title">Campo</span>
+                            <button type="button" class="icon-btn delete" onclick="this.parentElement.parentElement.remove()">🗑️</button>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nome do Campo</label>
+                            <input type="text" class="campo-nome form-input" value="${campo.nome}">
+                        </div>
+                        <div class="grid-3">
+                            <div class="form-group">
+                                <label class="form-label">Unidade</label>
+                                <input type="text" class="campo-unidade form-input" value="${campo.unidade}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Mín Normal</label>
+                                <input type="number" class="campo-min form-input" step="0.01" value="${campo.min}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Máx Normal</label>
+                                <input type="number" class="campo-max form-input" step="0.01" value="${campo.max}">
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+            
+            document.getElementById('editarTestePOCModal').classList.add('active');
+        }
+
+        function atualizarCamposEditTestePOC() {
+            const tipo = document.getElementById('editTestePOCTipo').value;
+            const container = document.getElementById('camposEditTestePOC');
+            
+            if (tipo === 'unico') {
+                container.innerHTML = `
+                    <div class="form-group">
+                        <label class="form-label">Unidade *</label>
+                        <input type="text" id="editTestePOCUnidade" class="form-input" required placeholder="Ex: mg/dL, mmHg, %">
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Valor Mínimo Normal</label>
+                            <input type="number" id="editTestePOCMin" class="form-input" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Valor Máximo Normal</label>
+                            <input type="number" id="editTestePOCMax" class="form-input" step="0.01">
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function adicionarCampoEditTestePOC() {
+            const container = document.getElementById('camposEditTestePOC');
+            const div = document.createElement('div');
+            div.className = 'item-card';
+            div.innerHTML = `
+                <div class="item-header">
+                    <span class="item-title">Novo Campo</span>
+                    <button type="button" class="icon-btn delete" onclick="this.parentElement.parentElement.remove()">🗑️</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nome do Campo</label>
+                    <input type="text" class="campo-nome form-input" placeholder="Ex: Sistólica, LDL">
+                </div>
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label class="form-label">Unidade</label>
+                        <input type="text" class="campo-unidade form-input" placeholder="mmHg">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Mín Normal</label>
+                        <input type="number" class="campo-min form-input" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Máx Normal</label>
+                        <input type="number" class="campo-max form-input" step="0.01">
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        function salvarEdicaoTestePOC() {
+            const id = document.getElementById('editTesteId').value;
+            const nome = document.getElementById('editTestePOCNome').value.trim();
+            const tipo = document.getElementById('editTestePOCTipo').value;
+            
+            if (!nome || !tipo) {
+                alert('Preencha todos os campos obrigatórios');
+                return;
+            }
+            
+            const teste = state.testesPOC.find(t => t.id === id);
+            if (!teste) return;
+            
+            let campos = [];
+            
+            if (tipo === 'unico') {
+                const unidade = document.getElementById('editTestePOCUnidade').value.trim();
+                const min = parseFloat(document.getElementById('editTestePOCMin').value) || 0;
+                const max = parseFloat(document.getElementById('editTestePOCMax').value) || 999;
+                
+                if (!unidade) {
+                    alert('Defina a unidade do teste');
+                    return;
+                }
+                
+                campos.push({ nome: nome, unidade, min, max });
+            } else {
+                const campoCards = document.querySelectorAll('#camposEditTestePOC .item-card');
+                campoCards.forEach(card => {
+                    const nomeCampo = card.querySelector('.campo-nome').value.trim();
+                    const unidade = card.querySelector('.campo-unidade').value.trim();
+                    const min = parseFloat(card.querySelector('.campo-min').value) || 0;
+                    const max = parseFloat(card.querySelector('.campo-max').value) || 999;
+                    
+                    if (nomeCampo && unidade) {
+                        campos.push({ nome: nomeCampo, unidade, min, max });
+                    }
+                });
+                
+                if (campos.length === 0) {
+                    alert('Adicione pelo menos um campo ao teste');
+                    return;
+                }
+            }
+            
+            teste.nome = nome;
+            teste.tipo = tipo;
+            teste.campos = campos;
+            
+            saveData();
+            closeModal('editarTestePOCModal');
+            renderTestesPOC();
+        }
+
+        function toggleTesteAtivo(id) {
+            const teste = state.testesPOC.find(t => t.id === id);
+            if (teste) {
+                teste.ativo = !teste.ativo;
+                saveData();
+                renderTestesPOC();
+                updateDashboard();
+            }
+        }
+
+        function renderUtilizadores() {
+            const tbody = document.getElementById('utilizadoresTableBody');
+            tbody.innerHTML = state.utilizadores.map(u => `
+                <tr>
+                    <td>${u.operador}</td>
+                    <td>${u.nome}</td>
+                    <td>${u.cedula}</td>
+                    <td><span class="badge badge-info">${u.role === 'admin' ? 'Administrador' : 'Farmacêutico'}</span></td>
+                    <td><span class="badge badge-${u.ativo ? 'success' : 'error'}">${u.ativo ? 'Ativo' : 'Inativo'}</span></td>
+                    <td>
+                        ${u.operador !== '64' ? `<button class="btn btn-danger btn-small" onclick="toggleUserAtivo('${u.operador}')">${u.ativo ? 'Desativar' : 'Ativar'}</button>` : ''}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function novoUtilizador() {
+            document.getElementById('novoUtilizadorForm').reset();
+            
+            const container = document.getElementById('permissoesConsulta');
+            container.innerHTML = state.tiposConsulta.filter(t => t.ativo).map(t => `
+                <label class="checkbox-label">
+                    <input type="checkbox" value="${t.id}">
+                    <span>${t.nome}</span>
+                </label>
+            `).join('');
+            
+            document.getElementById('novoUtilizadorModal').classList.add('active');
+        }
+
+        function salvarUtilizador() {
+            const operador = document.getElementById('userOperador').value.trim();
+            const password = document.getElementById('userPassword').value.trim();
+            const nome = document.getElementById('userNome').value.trim();
+            const cedula = document.getElementById('userCedula').value.trim();
+            const role = document.getElementById('userRole').value;
+            
+            if (!operador || !password || !nome || !cedula) {
+                alert('Preencha todos os campos obrigatórios');
+                return;
+            }
+            
+            if (state.utilizadores.find(u => u.operador === operador)) {
+                alert('Já existe um utilizador com este código de operador');
+                return;
+            }
+            
+            const permissoes = Array.from(document.querySelectorAll('#permissoesConsulta input:checked'))
+                .map(cb => cb.value);
+            
+            state.utilizadores.push({
+                operador,
+                passwordHash: password,
+                nome,
+                cedula,
+                role,
+                permissoes,
+                ativo: true
+            });
+            
+            saveData();
+            closeModal('novoUtilizadorModal');
+            renderUtilizadores();
+        }
+
+        function toggleUserAtivo(operador) {
+            const user = state.utilizadores.find(u => u.operador === operador);
+            if (user) {
+                user.ativo = !user.ativo;
+                saveData();
+                renderUtilizadores();
+            }
+        }
+
+        // Protocolos
+        function renderProtocolos() {
+            const container = document.getElementById('protocolosList');
+            
+            if (state.protocolos.length === 0) {
+                container.innerHTML = `
+                    <div style="padding: 3rem; text-align: center;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">📋</div>
+                        <h3 style="color: var(--color-text-secondary); margin-bottom: 0.5rem;">Nenhum protocolo configurado</h3>
+                        <p class="text-secondary text-small">Crie protocolos para automatizar recomendações nas consultas</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = state.protocolos.map(p => {
+                const tipo = state.tiposConsulta.find(t => t.id === p.tipoConsultaId);
+                return `
+                    <div style="padding: 1.5rem; border-bottom: 1px solid var(--color-border-light); display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem;">
+                                <div style="width: 8px; height: 8px; background: ${tipo?.cor || '#10b981'}; border-radius: 50%;"></div>
+                                <h4 style="margin: 0; font-weight: 600;">${tipo?.nome || 'Tipo desconhecido'}</h4>
+                            </div>
+                            <div class="text-small text-secondary" style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                                <span>💊 ${p.suplementos?.length || 0} suplementos</span>
+                                <span>🥗 ${p.medidas?.length || 0} medidas</span>
+                                <span>🔬 ${p.exames?.length || 0} exames</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-secondary btn-small" onclick="editarProtocolo('${p.id}')">Editar</button>
+                            <button class="btn btn-danger btn-small" onclick="removerProtocolo('${p.id}')">Remover</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function novoProtocolo() {
+            document.getElementById('protocoloModalTitle').textContent = 'Novo Protocolo Terapêutico';
+            document.getElementById('protocoloForm').reset();
+            document.getElementById('editProtocoloId').value = '';
+            
+            const selectTipo = document.getElementById('protocoloTipoConsulta');
+            const tiposComProtocolo = state.protocolos.map(p => p.tipoConsultaId);
+            const tiposDisponiveis = state.tiposConsulta.filter(t => t.ativo && !tiposComProtocolo.includes(t.id));
+            
+            selectTipo.innerHTML = '<option value="">Selecione o tipo de consulta</option>' +
+                tiposDisponiveis.map(t => `<option value="${t.id}">${t.nome}</option>`).join('');
+            
+            document.getElementById('protocoloSuplementos').innerHTML = '<p class="text-secondary text-small">Nenhum suplemento adicionado</p>';
+            document.getElementById('protocoloMedidas').innerHTML = '<p class="text-secondary text-small">Nenhuma medida adicionada</p>';
+            document.getElementById('protocoloExames').innerHTML = '<p class="text-secondary text-small">Nenhum exame adicionado</p>';
+            
+            document.getElementById('protocoloModal').classList.add('active');
+        }
+
+        function editarProtocolo(id) {
+            const protocolo = state.protocolos.find(p => p.id === id);
+            if (!protocolo) return;
+            
+            document.getElementById('protocoloModalTitle').textContent = 'Editar Protocolo Terapêutico';
+            document.getElementById('editProtocoloId').value = protocolo.id;
+            
+            const selectTipo = document.getElementById('protocoloTipoConsulta');
+            selectTipo.innerHTML = state.tiposConsulta.filter(t => t.ativo).map(t => 
+                `<option value="${t.id}" ${t.id === protocolo.tipoConsultaId ? 'selected' : ''}>${t.nome}</option>`
+            ).join('');
+            selectTipo.disabled = true;
+            
+            // Carregar suplementos
+            renderProtocoloSuplementos(protocolo.suplementos || []);
+            renderProtocoloMedidas(protocolo.medidas || []);
+            renderProtocoloExames(protocolo.exames || []);
+            
+            document.getElementById('protocoloModal').classList.add('active');
+        }
+
+        let currentProtocoloData = { suplementos: [], medidas: [], exames: [] };
+
+        function renderProtocoloSuplementos(suplementos) {
+            currentProtocoloData.suplementos = suplementos;
+            const container = document.getElementById('protocoloSuplementos');
+            
+            if (suplementos.length === 0) {
+                container.innerHTML = '<p class="text-secondary text-small">Nenhum suplemento adicionado</p>';
+                return;
+            }
+            
+            container.innerHTML = suplementos.map((sup, idx) => `
+                <div class="item-card">
+                    <div class="item-header">
+                        <span class="item-title">${sup.nome || 'Suplemento'}</span>
+                        <button type="button" class="icon-btn delete" onclick="removerSupProtocolo(${idx})">🗑️</button>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label text-small">Nome do Suplemento</label>
+                            <input type="text" class="form-input" value="${sup.nome || ''}" 
+                                   onchange="currentProtocoloData.suplementos[${idx}].nome = this.value">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label text-small">Link/Fonte Externa</label>
+                            <input type="url" class="form-input" value="${sup.link || ''}" 
+                                   placeholder="https://..."
+                                   onchange="currentProtocoloData.suplementos[${idx}].link = this.value">
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label text-small">Posologia</label>
+                            <input type="text" class="form-input" value="${sup.posologia || ''}" 
+                                   placeholder="Ex: 1 cápsula ao pequeno-almoço"
+                                   onchange="currentProtocoloData.suplementos[${idx}].posologia = this.value">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label text-small">Duração</label>
+                            <input type="text" class="form-input" value="${sup.duracao || ''}" 
+                                   placeholder="Ex: 3 meses"
+                                   onchange="currentProtocoloData.suplementos[${idx}].duracao = this.value">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label text-small">Indicação</label>
+                        <textarea class="form-textarea" rows="2" 
+                                  onchange="currentProtocoloData.suplementos[${idx}].indicacao = this.value">${sup.indicacao || ''}</textarea>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function adicionarSupProtocolo() {
+            currentProtocoloData.suplementos.push({
+                nome: '',
+                link: '',
+                posologia: '',
+                duracao: '',
+                indicacao: ''
+            });
+            renderProtocoloSuplementos(currentProtocoloData.suplementos);
+        }
+
+        function removerSupProtocolo(idx) {
+            currentProtocoloData.suplementos.splice(idx, 1);
+            renderProtocoloSuplementos(currentProtocoloData.suplementos);
+        }
+
+        function renderProtocoloMedidas(medidas) {
+            currentProtocoloData.medidas = medidas;
+            const container = document.getElementById('protocoloMedidas');
+            
+            if (medidas.length === 0) {
+                container.innerHTML = '<p class="text-secondary text-small">Nenhuma medida adicionada</p>';
+                return;
+            }
+            
+            container.innerHTML = medidas.map((medida, idx) => `
+                <div class="item-card">
+                    <div class="item-header">
+                        <input type="text" class="form-input" value="${medida}" 
+                               onchange="currentProtocoloData.medidas[${idx}] = this.value"
+                               placeholder="Descreva a medida não-farmacológica...">
+                        <button type="button" class="icon-btn delete" onclick="removerMedidaProtocolo(${idx})">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function adicionarMedidaProtocolo() {
+            currentProtocoloData.medidas.push('');
+            renderProtocoloMedidas(currentProtocoloData.medidas);
+        }
+
+        function removerMedidaProtocolo(idx) {
+            currentProtocoloData.medidas.splice(idx, 1);
+            renderProtocoloMedidas(currentProtocoloData.medidas);
+        }
+
+        function renderProtocoloExames(exames) {
+            currentProtocoloData.exames = exames;
+            const container = document.getElementById('protocoloExames');
+            
+            if (exames.length === 0) {
+                container.innerHTML = '<p class="text-secondary text-small">Nenhum exame adicionado</p>';
+                return;
+            }
+            
+            container.innerHTML = exames.map((exame, idx) => `
+                <div class="item-card">
+                    <div class="item-header">
+                        <span class="item-title">${exame.nome || 'Exame'}</span>
+                        <button type="button" class="icon-btn delete" onclick="removerExameProtocolo(${idx})">🗑️</button>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label text-small">Nome do Exame</label>
+                            <input type="text" class="form-input" value="${exame.nome || ''}" 
+                                   onchange="currentProtocoloData.exames[${idx}].nome = this.value">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label text-small">Laboratório Sugerido</label>
+                            <input type="text" class="form-input" value="${exame.laboratorio || ''}" 
+                                   placeholder="Ex: Unilabs, Affidea"
+                                   onchange="currentProtocoloData.exames[${idx}].laboratorio = this.value">
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label text-small">Indicação</label>
+                            <input type="text" class="form-input" value="${exame.indicacao || ''}" 
+                                   placeholder="Motivo/Objetivo do exame"
+                                   onchange="currentProtocoloData.exames[${idx}].indicacao = this.value">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label text-small">Urgência</label>
+                            <select class="form-select" onchange="currentProtocoloData.exames[${idx}].urgencia = this.value">
+                                <option value="rotina" ${exame.urgencia === 'rotina' ? 'selected' : ''}>Rotina</option>
+                                <option value="breve" ${exame.urgencia === 'breve' ? 'selected' : ''}>Breve Prazo</option>
+                                <option value="urgente" ${exame.urgencia === 'urgente' ? 'selected' : ''}>Urgente</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function adicionarExameProtocolo() {
+            currentProtocoloData.exames.push({
+                nome: '',
+                laboratorio: '',
+                indicacao: '',
+                urgencia: 'rotina'
+            });
+            renderProtocoloExames(currentProtocoloData.exames);
+        }
+
+        function removerExameProtocolo(idx) {
+            currentProtocoloData.exames.splice(idx, 1);
+            renderProtocoloExames(currentProtocoloData.exames);
+        }
+
+        function salvarProtocolo() {
+            const editId = document.getElementById('editProtocoloId').value;
+            const tipoConsultaId = document.getElementById('protocoloTipoConsulta').value;
+            
+            if (!tipoConsultaId) {
+                alert('Selecione o tipo de consulta');
+                return;
+            }
+            
+            if (editId) {
+                const protocolo = state.protocolos.find(p => p.id === editId);
+                if (protocolo) {
+                    protocolo.suplementos = currentProtocoloData.suplementos;
+                    protocolo.medidas = currentProtocoloData.medidas;
+                    protocolo.exames = currentProtocoloData.exames;
+                    protocolo.updatedAt = new Date().toISOString();
+                }
+            } else {
+                const novoProtocolo = {
+                    id: Date.now().toString(),
+                    tipoConsultaId,
+                    suplementos: currentProtocoloData.suplementos,
+                    medidas: currentProtocoloData.medidas,
+                    exames: currentProtocoloData.exames,
+                    createdAt: new Date().toISOString()
+                };
+                state.protocolos.push(novoProtocolo);
+            }
+            
+            saveData();
+            closeModal('protocoloModal');
+            renderProtocolos();
+            
+            currentProtocoloData = { suplementos: [], medidas: [], exames: [] };
+        }
+
+        function removerProtocolo(id) {
+            if (!confirm('Tem certeza que deseja remover este protocolo?')) return;
+            
+            state.protocolos = state.protocolos.filter(p => p.id !== id);
+            saveData();
+            renderProtocolos();
+        }
+
+        // Utility
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Inicialização
+        loadData();
+        
+        // Iniciar sincronização automática com Firebase
+        startAutoSync();
+        
+        if (state.utentes.length === 0 && state.consultas.length === 0) {
+            saveData();
+        }
+function renderSuplementosAdmin() {
+    const tbody = document.getElementById('suplementosTableBody');
+    if (!state.suplementos || state.suplementos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-secondary">Nenhum suplemento configurado</td></tr>';
+        return;
+    }
+    tbody.innerHTML = state.suplementos.map(s => `
+        <tr>
+            <td><strong>${s.nome}</strong></td>
+            <td>${s.marca || '-'}</td>
+            <td>${(s.utilizacoes || '').substring(0, 60)}${(s.utilizacoes && s.utilizacoes.length > 60) ? '...' : ''}</td>
+            <td><span class="badge badge-${s.ativo ? 'success' : 'error'}">${s.ativo ? 'Ativo' : 'Inativo'}</span></td>
+            <td>
+                <button class="btn btn-secondary btn-small" onclick="editarSuplemento('${s.id}')">Editar</button>
+                <button class="btn btn-danger btn-small" onclick="toggleSuplementoAtivo('${s.id}')">${s.ativo ? 'Desativar' : 'Ativar'}</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function novoSuplemento() {
+    document.getElementById('novoSuplementoForm').reset();
+    document.getElementById('novoSuplementoModal').classList.add('active');
+}
+
+function salvarSuplemento() {
+    const nome = document.getElementById('supNome').value.trim();
+    if (!nome) { alert('Preencha o nome do suplemento'); return; }
+
+    const id = nome.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + '_' + Date.now();
+
+    state.suplementos.push({
+        id,
+        nome,
+        marca: document.getElementById('supMarca').value.trim(),
+        ingredientes: document.getElementById('supIngredientes').value.trim(),
+        utilizacoes: document.getElementById('supUtilizacoes').value.trim(),
+        posologia: document.getElementById('supPosologia').value.trim(),
+        ativo: true,
+        createdAt: new Date().toISOString()
+    });
+
+    saveData();
+    closeModal('novoSuplementoModal');
+    renderSuplementosAdmin();
+}
+
+function editarSuplemento(id) {
+    const sup = state.suplementos.find(s => s.id === id);
+    if (!sup) return;
+    document.getElementById('editSupId').value = sup.id;
+    document.getElementById('editSupNome').value = sup.nome || '';
+    document.getElementById('editSupMarca').value = sup.marca || '';
+    document.getElementById('editSupIngredientes').value = sup.ingredientes || '';
+    document.getElementById('editSupUtilizacoes').value = sup.utilizacoes || '';
+    document.getElementById('editSupPosologia').value = sup.posologia || '';
+    document.getElementById('editarSuplementoModal').classList.add('active');
+}
+
+function salvarEdicaoSuplemento() {
+    const id = document.getElementById('editSupId').value;
+    const sup = state.suplementos.find(s => s.id === id);
+    if (!sup) return;
+
+    sup.nome = document.getElementById('editSupNome').value.trim();
+    sup.marca = document.getElementById('editSupMarca').value.trim();
+    sup.ingredientes = document.getElementById('editSupIngredientes').value.trim();
+    sup.utilizacoes = document.getElementById('editSupUtilizacoes').value.trim();
+    sup.posologia = document.getElementById('editSupPosologia').value.trim();
+    sup.updatedAt = new Date().toISOString();
+
+    if (!sup.nome) { alert('O nome é obrigatório'); return; }
+
+    saveData();
+    closeModal('editarSuplementoModal');
+    renderSuplementosAdmin();
+}
+
+function toggleSuplementoAtivo(id) {
+    const sup = state.suplementos.find(s => s.id === id);
+    if (!sup) return;
+    sup.ativo = !sup.ativo;
+    saveData();
+    renderSuplementosAdmin();
+}
+
+function renderSuplementosView() {
+    renderSuplementosTabela('suplementosViewTableBody', document.getElementById('searchSuplemento')?.value || '');
+}
+
+function filterSuplemetos() {
+    const termo = document.getElementById('searchSuplemento').value;
+    renderSuplementosTabela('suplementosViewTableBody', termo);
+}
+
+function renderSuplementosTabela(tbodyId, filtro) {
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+
+    const lista = (state.suplementos || []).filter(s =>
+        !filtro ||
+        s.nome.toLowerCase().includes(filtro.toLowerCase()) ||
+        (s.marca || '').toLowerCase().includes(filtro.toLowerCase())
+    );
+
+    if (lista.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-secondary">Nenhum suplemento encontrado</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = lista.map(s => `
+        <tr>
+            <td><strong>${s.nome}</strong></td>
+            <td>${s.marca || '-'}</td>
+            <td>${(s.ingredientes || '').substring(0, 50)}${(s.ingredientes && s.ingredientes.length > 50) ? '...' : ''}</td>
+            <td>${(s.utilizacoes || '').substring(0, 60)}${(s.utilizacoes && s.utilizacoes.length > 60) ? '...' : ''}</td>
+            <td>${(s.posologia || '').substring(0, 50)}${(s.posologia && s.posologia.length > 50) ? '...' : ''}</td>
+            <td><span class="badge badge-${s.ativo ? 'success' : 'error'}">${s.ativo ? 'Ativo' : 'Inativo'}</span></td>
+            <td>
+                <button class="btn btn-secondary btn-small" onclick="editarSuplemento('${s.id}')">Editar</button>
+                <button class="btn btn-danger btn-small" onclick="toggleSuplementoAtivo('${s.id}'); renderSuplementosView();">${s.ativo ? 'Desativar' : 'Ativar'}</button>
+            </td>
+        </tr>
+    `).join('');
+}
+    </script>
+</body>
+</html>
+
