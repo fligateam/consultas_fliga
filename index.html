@@ -2866,7 +2866,7 @@ function renderQuestionario() {
             document.getElementById('guiaProximaConsulta').value = state.currentConsulta.proximaConsulta || '';
         }
 
-        function renderSuplementsConsulta(suplementos) {
+       function renderSuplementsConsulta(suplementos) {
     const container = document.getElementById('consultaSuplemetos');
     if (!container) return;
 
@@ -2895,16 +2895,6 @@ function renderQuestionario() {
                     <input type="text" class="form-input" value="${sup.marca || ''}"
                            onchange="state.currentConsulta.suplementos[${idx}].marca = this.value">
                 </div>
-            </div>
-            <div class="form-group">
-                <label class="form-label text-small">Ingredientes</label>
-                <textarea class="form-textarea" rows="2"
-                          onchange="state.currentConsulta.suplementos[${idx}].ingredientes = this.value">${sup.ingredientes || ''}</textarea>
-            </div>
-            <div class="form-group">
-                <label class="form-label text-small">Utilizações</label>
-                <textarea class="form-textarea" rows="2"
-                          onchange="state.currentConsulta.suplementos[${idx}].utilizacoes = this.value">${sup.utilizacoes || ''}</textarea>
             </div>
             <div class="form-group">
                 <label class="form-label text-small">Posologia</label>
