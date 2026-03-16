@@ -3703,21 +3703,25 @@ function selecionarSupCatalogo(supId, idx) {
             }
         }
 
-        function renderUtilizadores() {
-            const tbody = document.getElementById('utilizadoresTableBody');
-            tbody.innerHTML = state.utilizadores.map(u => `
-                <tr>
-                    <td>${u.operador}</td>
-                    <td>${u.nome}</td>
-                    <td>${u.cedula}</td>
-                    <td><span class="badge badge-info">${u.role === 'admin' ? 'Administrador' : 'Farmacêutico'}</span></td>
-                    <td><span class="badge badge-${u.ativo ? 'success' : 'error'}">${u.ativo ? 'Ativo' : 'Inativo'}</span></td>
-                    <td>
-                        ${u.operador !== '64' ? `<button class="btn btn-danger btn-small" onclick="toggleUserAtivo('${u.operador}')">${u.ativo ? 'Desativar' : 'Ativar'}</button>` : ''}
-                    </td>
-                </tr>
-            `).join('');
-        }
+       function renderUtilizadores() {
+    const tbody = document.getElementById('utilizadoresTableBody');
+    tbody.innerHTML = state.utilizadores.map(u => `
+        <tr>
+            <td><strong>${u.operador}</strong></td>
+            <td>${u.nome}</td>
+            <td>${u.cedula || '-'}</td>
+            <td><span class="badge badge-info">${u.role}</span></td>
+            <td><span class="badge badge-${u.ativo ? 'success' : 'error'}">${u.ativo ? 'Ativo' : 'Inativo'}</span></td>
+            <td>
+                <button class="btn btn-secondary btn-small" onclick="editarUtilizador('${u.operador}')">Editar</button>
+                <button class="btn btn-secondary btn-small" onclick="toggleUtilizadorAtivo('${u.operador}')">${u.ativo ? 'Desativar' : 'Ativar'}</button>
+                ${u.operador !== state.currentUser.operador ? `
+                <button class="btn btn-danger btn-small" onclick="apagarUtilizador('${u.operador}')">Apagar</button>
+                ` : '<span class="text-secondary text-small">(tu própria)</span>'}
+            </td>
+        </tr>
+    `).join('');
+}
 
         function novoUtilizador() {
             document.getElementById('novoUtilizadorForm').reset();
@@ -3776,7 +3780,21 @@ function selecionarSupCatalogo(supId, idx) {
                 renderUtilizadores();
             }
         }
+function apagarUtilizador(operador) {
+    const user = state.utilizadores.find(u => u.operador === operador);
+    if (!user) return;
 
+    if (operador === state.currentUser.operador) {
+        alert('Não podes apagar o teu próprio utilizador.');
+        return;
+    }
+
+    if (!confirm(`Tens a certeza que queres apagar o utilizador "${user.nome}" (${operador})?\n\nEsta ação é irreversível.`)) return;
+
+    state.utilizadores = state.utilizadores.filter(u => u.operador !== operador);
+    saveData();
+    renderUtilizadores();
+}
         // Protocolos
         function renderProtocolos() {
             const container = document.getElementById('protocolosList');
