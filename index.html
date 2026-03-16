@@ -1212,12 +1212,24 @@
             <div class="modal-body">
                 <div id="consultaStep1">
                     <div class="grid-2">
-                        <div class="form-group">
-                            <label class="form-label">Utente *</label>
-                            <select id="consultaUtente" class="form-select" required onchange="carregarDadosUtente()">
-                                <option value="">Selecione um utente</option>
-                            </select>
-                        </div>
+<div class="form-group">
+    <label class="form-label">Utente *</label>
+    <div style="position: relative;">
+        <input type="text" id="consultaUtenteSearch" class="form-input"
+               placeholder="Pesquisar por NIF ou nome..."
+               oninput="pesquisarUtenteConsulta()"
+               autocomplete="off">
+        <div id="consultaUtenteResultados"
+             style="display:none; position:absolute; top:100%; left:0; right:0; background:white;
+                    border:1px solid var(--color-border); border-radius:8px; z-index:999;
+                    max-height:200px; overflow-y:auto; box-shadow: var(--shadow-lg);">
+        </div>
+    </div>
+    <input type="hidden" id="consultaUtente">
+    <div id="utenteEscolhido" style="display:none; margin-top:0.5rem;"
+         class="info-box" style="padding: 0.5rem;">
+    </div>
+</div>
                         <div class="form-group">
                             <label class="form-label">Tipo de Consulta *</label>
                             <select id="consultaTipo" class="form-select" required>
@@ -2530,9 +2542,10 @@ dermocosmetica: ''
             document.getElementById('btnAvancar').classList.remove('hidden');
             document.getElementById('btnFinalizar').classList.add('hidden');
             
-            const selectUtente = document.getElementById('consultaUtente');
-            selectUtente.innerHTML = '<option value="">Selecione um utente</option>' +
-                state.utentes.map(u => `<option value="${u.nif}">${u.nome} (${u.nif})</option>`).join('');
+document.getElementById('consultaUtenteSearch').value = '';
+document.getElementById('consultaUtente').value = '';
+document.getElementById('utenteEscolhido').style.display = 'none';
+document.getElementById('consultaUtenteResultados').style.display = 'none';
             
             const selectTipo = document.getElementById('consultaTipo');
             const tiposPermitidos = state.currentUser.role === 'admin' 
@@ -2549,7 +2562,7 @@ dermocosmetica: ''
         }
 
         function carregarDadosUtente() {
-            const nif = document.getElementById('consultaUtente').value;
+        const nif = document.getElementById('consultaUtente').value;
             if (!nif) {
                 document.getElementById('alertasUtente').classList.add('hidden');
                 return;
@@ -4241,6 +4254,59 @@ function renderSuplementosTabela(tbodyId, filtro) {
             </td>
         </tr>
     `).join('');
+}
+        function pesquisarUtenteConsulta() {
+    const termo = document.getElementById('consultaUtenteSearch').value.toLowerCase().trim();
+    const resultadosDiv = document.getElementById('consultaUtenteResultados');
+
+    // Limpar seleção anterior
+    document.getElementById('consultaUtente').value = '';
+    document.getElementById('utenteEscolhido').style.display = 'none';
+    document.getElementById('alertasUtente').classList.add('hidden');
+
+    if (termo.length < 2) {
+        resultadosDiv.style.display = 'none';
+        return;
+    }
+
+    const filtrados = state.utentes.filter(u =>
+        u.nif.includes(termo) ||
+        u.nome.toLowerCase().includes(termo)
+    );
+
+    if (filtrados.length === 0) {
+        resultadosDiv.innerHTML = '<p class="text-secondary text-small" style="padding:0.75rem;">Nenhum utente encontrado</p>';
+        resultadosDiv.style.display = 'block';
+        return;
+    }
+
+    resultadosDiv.innerHTML = filtrados.map(u => `
+        <div onclick="selecionarUtenteConsulta('${u.nif}')"
+             style="padding: 0.75rem; cursor:pointer; border-bottom: 1px solid var(--color-border);"
+             onmouseover="this.style.background='var(--color-bg)'"
+             onmouseout="this.style.background='white'">
+            <strong>${u.nome}</strong>
+            <span class="text-secondary text-small" style="margin-left:0.5rem;">NIF: ${u.nif}</span>
+        </div>
+    `).join('');
+
+    resultadosDiv.style.display = 'block';
+}
+
+function selecionarUtenteConsulta(nif) {
+    const utente = state.utentes.find(u => u.nif === nif);
+    if (!utente) return;
+
+    document.getElementById('consultaUtente').value = nif;
+    document.getElementById('consultaUtenteSearch').value = `${utente.nome} (${utente.nif})`;
+    document.getElementById('consultaUtenteResultados').style.display = 'none';
+
+    // Mostrar resumo do utente selecionado
+    const escolhido = document.getElementById('utenteEscolhido');
+    escolhido.innerHTML = `✅ <strong>${utente.nome}</strong> — NIF: ${utente.nif}`;
+    escolhido.style.display = 'block';
+
+    carregarDadosUtente();
 }
     </script>
 </body>
