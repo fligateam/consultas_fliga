@@ -2738,7 +2738,7 @@ function renderQuestionario() {
     });
 }
 
-function renderTestesConsulta() {
+   function renderTestesConsulta() {
     const container = document.getElementById('testesContent');
     if (state.currentConsulta.testes.length === 0) {
         container.innerHTML = '<p class="text-secondary">Nenhum teste adicionado. Clique em "+ Adicionar Teste" para começar.</p>';
@@ -2747,8 +2747,7 @@ function renderTestesConsulta() {
     container.innerHTML = state.currentConsulta.testes.map((teste, idx) => {
         const testePOC = state.testesPOC.find(t => t.id === teste.testePOCId);
         if (!testePOC) return '';
-
-        const camposHtml = testePOC.campos.map((campo, campoIdx) => {
+        const camposHtml = testePOC.campos.map((campo) => {
             const valor = teste.valores[campo.nome] || '';
             const interpretacao = valor ? interpretarValor(parseFloat(valor), campo.min, campo.max) : '';
             return `<div class="field-row">
@@ -2761,8 +2760,6 @@ function renderTestesConsulta() {
                 ${interpretacao ? `<span class="badge badge-${interpretacao.classe}">${interpretacao.texto}</span>` : ''}
             </div>`;
         }).join('');
-
-        // Calcular IMC
         let imcHtml = '';
         if (testePOC.id === 'imc' && teste.valores['Peso'] && teste.valores['Altura']) {
             const peso = parseFloat(teste.valores['Peso']);
@@ -2781,7 +2778,6 @@ function renderTestesConsulta() {
                 <div class="info-box-text">${emoji} <strong>${texto}</strong></div>
             </div>`;
         }
-
         return `<div class="item-card" style="margin-bottom:1rem;">
             <div class="item-header">
                 <div class="item-title">${testePOC.nome}</div>
@@ -2797,37 +2793,6 @@ function renderTestesConsulta() {
         </div>`;
     }).join('');
 }
-        // Calcular IMC se for teste IMC
-        let imcHtml = '';
-        if (testePOC.id === 'imc' && teste.valores['Peso'] && teste.valores['Altura']) {
-            const peso = parseFloat(teste.valores['Peso']);
-            const altura = parseFloat(teste.valores['Altura']) / 100;
-            const imc = (peso / (altura * altura)).toFixed(1);
-            let texto = '';
-            let emoji = '';
-            if (imc < 18.5)      { texto = 'Baixo peso';        emoji = '⚠️'; }
-            else if (imc < 25)   { texto = 'Peso normal';        emoji = '✅'; }
-            else if (imc < 30)   { texto = 'Excesso de peso';    emoji = '⚠️'; }
-            else if (imc < 35)   { texto = 'Obesidade grau I';   emoji = '🔴'; }
-            else if (imc < 40)   { texto = 'Obesidade grau II';  emoji = '🔴'; }
-            else                 { texto = 'Obesidade grau III'; emoji = '🔴'; }
-
-            state.currentConsulta.testes[idx].valores['IMC'] = imc;
-
-            imcHtml = `
-                <div class="info-box" style="margin-top: 0.75rem;">
-                    <div class="info-box-title">🧮 IMC Calculado: <strong>${imc} kg/m²</strong></div>
-                    <div class="info-box-text">${emoji} <strong>${texto}</strong></div>
-                    <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--color-text-secondary);">
-                        <span style="margin-right:1rem;">IMC &lt; 18.5 → Baixo peso</span>
-                        <span style="margin-right:1rem;">18.5–24.9 → Normal</span>
-                        <span style="margin-right:1rem;">25–29.9 → Excesso de peso</span>
-                        <span>≥ 30 → Obesidade</span>
-                    </div>
-                </div>
-            `;
-        }
-
         function interpretarValor(valor, min, max) {
             if (valor < min) return { classe: 'error', texto: '⚠️ Abaixo do normal' };
             if (valor > max) return { classe: 'warning', texto: '⚠️ Acima do normal' };
