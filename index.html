@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Farmácia da Liga - Gestão de Consultas</title>
+    <title>Farmácia da Liga - Gestão de Consultas v2.0</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -2078,12 +2079,23 @@ state.suplementos.forEach(sup => {
 
         function inicializarTiposConsulta() {
             return [
-                { 
-                    id: 'menopausa', 
-                    nome: 'Menopausa', 
+                {
+                    id: 'menopausa',
+                    nome: 'Menopausa',
                     cor: '#EC4899',
                     pocDefaultIds: ['fsh', 'pressao_arterial', 'perfil_lipidico'],
-                    ativo: true
+                    ativo: true,
+                    questionario: [
+                        { id:'q_idade', pergunta:'Idade', tipo:'numero', obrigatorio:true },
+                        { id:'q_ult_mens', pergunta:'Data da última menstruação', tipo:'data', obrigatorio:false },
+                        { id:'q_fase', pergunta:'Fase climatérica', tipo:'escolha', opcoes:['Pré-menopausa','Perimenopausa','Menopausa','Pós-menopausa'], obrigatorio:true },
+                        { id:'q_thr', pergunta:'Terapêutica Hormonal (THS) atual', tipo:'escolha', opcoes:['Não','Sim – estrogénio tópico','Sim – THS sistémica','Parou recentemente'], obrigatorio:true },
+                        { id:'q_motivo', pergunta:'Motivo principal da consulta', tipo:'escolha', opcoes:['Controlo de sintomas','Revisão medicação','Rastreio / prevenção','Outro'], obrigatorio:true },
+                        { id:'q_patologias', pergunta:'Patologias relevantes', tipo:'multipla', opcoes:['Osteoporose','Dislipidemia','HTA','Diabetes Tipo 2','Doença Cardiovascular','Cancro da mama (historial)','Nenhuma'], obrigatorio:false },
+                        { id:'q_medicacao', pergunta:'Medicação habitual (resumo)', tipo:'textarea', obrigatorio:false },
+                        { id:'q_suplementos_atuais', pergunta:'Suplementação atual', tipo:'textarea', obrigatorio:false },
+                        { id:'q_obs', pergunta:'Observações adicionais', tipo:'textarea', obrigatorio:false }
+                    ]
                 },
                 { 
                     id: 'diabetes', 
@@ -2670,143 +2682,61 @@ if (consultasAnteriores.length > 0) {
 function renderQuestionario() {
     const tipoId = state.currentConsulta.tipo;
     const tipo = state.tiposConsulta.find(t => t.id === tipoId);
-    
+    const container = document.getElementById('questionarioContent');
     if (!tipo || !tipo.questionario || tipo.questionario.length === 0) {
-        document.getElementById('questionarioContent').innerHTML = `
-            <div class="info-box">
-                <p>Este tipo de consulta não possui questionário configurado.</p>
-                <p>Configure o questionário na seção Administração > Tipos de Consulta.</p>
-            </div>
-        `;
+        container.innerHTML = '<div class="info-box"><p>Este tipo de consulta não tem questionário configurado. Configure em Administração > Tipos de Consulta.</p></div>';
+        if (tipoId === 'menopausa') container.innerHTML += buildMRSQuestionario();
         return;
     }
-
     const respostasAnteriores = state.currentConsulta._respostasAnteriores || {};
-    const dataAnterior = state.currentConsulta._dataUltimaConsulta
-        ? new Date(state.currentConsulta._dataUltimaConsulta).toLocaleDateString('pt-PT')
-        : null;
-
-    // Aviso no topo se houver consulta anterior
-    const avisoAnterior = dataAnterior ? `
-        <div class="info-box info-box-warning" style="margin-bottom: 1rem;">
-            <div class="info-box-title">⚠️ Consulta anterior encontrada (${dataAnterior})</div>
-            <div class="info-box-text">As respostas anteriores estão destacadas a amarelo. Confirme se ainda são válidas e corrija se necessário.</div>
-        </div>
-    ` : '';
-    
+    const dataAnterior = state.currentConsulta._dataUltimaConsulta ? new Date(state.currentConsulta._dataUltimaConsulta).toLocaleDateString('pt-PT') : null;
+    const avisoAnterior = dataAnterior ? '<div class="info-box info-box-warning" style="margin-bottom:1rem;"><div class="info-box-title">⚠️ Consulta anterior encontrada (' + dataAnterior + ')</div><div class="info-box-text">Respostas anteriores destacadas a amarelo. Confirme se ainda são válidas.</div></div>' : '';
     const html = tipo.questionario.map((campo, idx) => {
         let inputHtml = '';
-        const valorAtual = state.currentConsulta.questionario[`campo_${idx}`] || '';
-        const valorAnterior = respostasAnteriores[`campo_${idx}`] || '';
-
-        // Se não há resposta atual mas há anterior, usa a anterior com destaque
+        const valorAtual = state.currentConsulta.questionario['campo_' + idx] || '';
+        const valorAnterior = respostasAnteriores['campo_' + idx] || '';
         const usandoAnterior = !valorAtual && !!valorAnterior;
         const valorMostrar = valorAtual || valorAnterior;
-        const estiloAnterior = usandoAnterior
-            ? 'background: #fefce8; border-color: #f59e0b; border-width: 2px;'
-            : '';
-        const labelAnterior = usandoAnterior
-            ? `<span style="font-size:0.72rem; color:#d97706; display:block; margin-bottom:0.25rem;">🕐 Resposta da consulta anterior — confirme se ainda é válida</span>`
-            : '';
-        
+        const estiloAnterior = usandoAnterior ? 'background:#fefce8;border-color:#f59e0b;border-width:2px;' : '';
+        const labelAnterior = usandoAnterior ? '<span style="font-size:0.72rem;color:#d97706;display:block;margin-bottom:0.25rem;">🕐 Resposta anterior — confirme</span>' : '';
         switch (campo.tipo) {
             case 'texto':
-                inputHtml = `
-                    ${labelAnterior}
-                    <input type="text" class="form-input" id="quest_${idx}" 
-                           value="${valorMostrar}" 
-                           style="${estiloAnterior}"
-                           oninput="this.style=''; state.currentConsulta.questionario['campo_${idx}'] = this.value;"
-                           ${campo.obrigatorio ? 'required' : ''}>`;
+                inputHtml = labelAnterior + '<input type="text" class="form-input" id="quest_' + idx + '" value="' + valorMostrar + '" style="' + estiloAnterior + '" oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;" ' + (campo.obrigatorio ? 'required' : '') + '>';
                 break;
             case 'numero':
-                inputHtml = `
-                    ${labelAnterior}
-                    <input type="number" class="form-input" id="quest_${idx}" 
-                           value="${valorMostrar}"
-                           style="${estiloAnterior}"
-                           oninput="this.style=''; state.currentConsulta.questionario['campo_${idx}'] = this.value;"
-                           ${campo.obrigatorio ? 'required' : ''}>`;
+                inputHtml = labelAnterior + '<input type="number" class="form-input" id="quest_' + idx + '" value="' + valorMostrar + '" style="' + estiloAnterior + '" oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;" ' + (campo.obrigatorio ? 'required' : '') + '>';
                 break;
             case 'data':
-                inputHtml = `
-                    ${labelAnterior}
-                    <input type="date" class="form-input" id="quest_${idx}" 
-                           value="${valorMostrar}"
-                           style="${estiloAnterior}"
-                           oninput="this.style=''; state.currentConsulta.questionario['campo_${idx}'] = this.value;"
-                           ${campo.obrigatorio ? 'required' : ''}>`;
+                inputHtml = labelAnterior + '<input type="date" class="form-input" id="quest_' + idx + '" value="' + valorMostrar + '" style="' + estiloAnterior + '" oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;" ' + (campo.obrigatorio ? 'required' : '') + '>';
                 break;
             case 'textarea':
-                inputHtml = `
-                    ${labelAnterior}
-                    <textarea class="form-textarea" id="quest_${idx}" rows="3"
-                              style="${estiloAnterior}"
-                              oninput="this.style=''; state.currentConsulta.questionario['campo_${idx}'] = this.value;"
-                              ${campo.obrigatorio ? 'required' : ''}>${valorMostrar}</textarea>`;
+                inputHtml = labelAnterior + '<textarea class="form-textarea" id="quest_' + idx + '" rows="3" style="' + estiloAnterior + '" oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;" ' + (campo.obrigatorio ? 'required' : '') + '>' + valorMostrar + '</textarea>';
                 break;
             case 'escolha':
-                inputHtml = `
-                    ${labelAnterior}
-                    <select class="form-select" id="quest_${idx}" 
-                            style="${estiloAnterior}"
-                            onchange="this.style=''; state.currentConsulta.questionario['campo_${idx}'] = this.value;"
-                            ${campo.obrigatorio ? 'required' : ''}>
-                        <option value="">Selecione...</option>
-                        ${campo.opcoes.map(opt => `<option value="${opt}" ${valorMostrar === opt ? 'selected' : ''}>${opt}</option>`).join('')}
-                    </select>`;
+                inputHtml = labelAnterior + '<select class="form-select" id="quest_' + idx + '" style="' + estiloAnterior + '" onchange="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;" ' + (campo.obrigatorio ? 'required' : '') + '><option value="">Selecione...</option>' + campo.opcoes.map(function(opt) { return '<option value="' + opt + '" ' + (valorMostrar === opt ? 'selected' : '') + '>' + opt + '</option>'; }).join('') + '</select>';
                 break;
             case 'multipla':
-                const valoresAtuais = valorMostrar ? valorMostrar.split('|||') : [];
-                inputHtml = `
-                    ${labelAnterior}
-                    <div class="checkbox-group" style="${estiloAnterior ? 'padding:0.5rem; border-radius:8px; ' + estiloAnterior : ''}">
-                        ${campo.opcoes.map((opt, optIdx) => `
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="quest_${idx}_${optIdx}" 
-                                       value="${opt}" ${valoresAtuais.includes(opt) ? 'checked' : ''}>
-                                <span>${opt}</span>
-                            </label>
-                        `).join('')}
-                    </div>`;
+                var valoresAtuais = valorMostrar ? valorMostrar.split('|||') : [];
+                inputHtml = labelAnterior + '<div class="checkbox-group" style="' + (estiloAnterior ? 'padding:0.5rem;border-radius:8px;' + estiloAnterior : '') + '">' + campo.opcoes.map(function(opt, optIdx) { return '<label class="checkbox-label"><input type="checkbox" id="quest_' + idx + '_' + optIdx + '" value="' + opt + '" ' + (valoresAtuais.indexOf(opt) > -1 ? 'checked' : '') + '><span>' + opt + '</span></label>'; }).join('') + '</div>';
                 break;
         }
-        
-        return `
-            <div class="form-group">
-                <label class="form-label">
-                    ${campo.pergunta}${campo.obrigatorio ? ' *' : ''}
-                </label>
-                ${inputHtml}
-            </div>
-        `;
+        return '<div class="form-group"><label class="form-label">' + campo.pergunta + (campo.obrigatorio ? ' *' : '') + '</label>' + inputHtml + '</div>';
     }).join('');
-}
-    
-    document.getElementById('questionarioContent').innerHTML = avisoAnterior + html;
-    
-    // Listeners para checkboxes
-    tipo.questionario.forEach((campo, idx) => {
+    const mrsHtml = (tipoId === 'menopausa') ? buildMRSQuestionario() : '';
+    container.innerHTML = avisoAnterior + html + mrsHtml;
+    tipo.questionario.forEach(function(campo, idx) {
         if (campo.tipo === 'multipla') {
-            campo.opcoes.forEach((opt, optIdx) => {
-                const checkbox = document.getElementById(`quest_${idx}_${optIdx}`);
-                if (checkbox) {
-                    checkbox.addEventListener('change', () => {
-                        const checkboxes = document.querySelectorAll(`[id^="quest_${idx}_"]`);
-                        const valores = Array.from(checkboxes)
-                            .filter(cb => cb.checked)
-                            .map(cb => cb.value);
-                        state.currentConsulta.questionario[`campo_${idx}`] = valores.join('|||');
-                        // Remover destaque amarelo ao alterar
-                        const grupo = checkbox.closest('.checkbox-group');
-                        if (grupo) grupo.style = '';
-                    });
-                }
+            campo.opcoes.forEach(function(opt, optIdx) {
+                var cb = document.getElementById('quest_' + idx + '_' + optIdx);
+                if (cb) cb.addEventListener('change', function() {
+                    var all = document.querySelectorAll('[id^="quest_' + idx + '_"]');
+                    state.currentConsulta.questionario['campo_' + idx] = Array.from(all).filter(function(c){return c.checked;}).map(function(c){return c.value;}).join('|||');
+                    var g = cb.closest('.checkbox-group'); if(g) g.style = '';
+                });
             });
         }
     });
 }
-
 
     function renderTestesConsulta() {
     const container = document.getElementById('testesContent');
@@ -3177,6 +3107,18 @@ function selecionarSupCatalogo(supId, idx) {
             state.currentConsulta.observacoes = document.getElementById('guiaObservacoes').value;
             state.currentConsulta.proximaConsulta = document.getElementById('guiaProximaConsulta').value;
             
+            // Capturar MRS se preenchido
+            if (typeof getMRSScoresFromForm === 'function') {
+                try {
+                    var _mrsScores = getMRSScoresFromForm();
+                    var _hasMRS = Object.keys(_mrsScores).length > 0;
+                    if (_hasMRS && typeof MRS_QUESTIONS !== 'undefined') {
+                        var _mrsTotal = 0; var _mrsSub = {somatic:0,psych:0,uro:0};
+                        MRS_QUESTIONS.forEach(function(q){ var v=_mrsScores[q.id]||0; _mrsTotal+=v; _mrsSub[q.domain]+=v; });
+                        state.currentConsulta.questionario._mrs = {total:_mrsTotal, sub:_mrsSub, scores:_mrsScores};
+                    }
+                } catch(e) { console.warn('MRS capture error:', e); }
+            }
             const consulta = {
                 id: Date.now().toString(),
                 utenteNIF: state.currentConsulta.utenteNIF,
@@ -3204,10 +3146,68 @@ function selecionarSupCatalogo(supId, idx) {
         }
 
         function abrirConsulta(id) {
-            const consulta = state.consultas.find(c => c.id === id);
+            var consulta = state.consultas.find(function(c){return c.id===id;});
             if (!consulta) return;
-            
-            alert('Visualização completa da consulta será implementada com impressão do guia terapêutico.');
+            var utente = state.utentes.find(function(u){return u.nif===consulta.utenteNIF;});
+            var tipo   = state.tiposConsulta.find(function(t){return t.id===consulta.tipo;});
+            var data   = new Date(consulta.data).toLocaleString('pt-PT');
+            var secoes = '';
+            // Campos questionario normais
+            var camposN = (tipo && tipo.questionario) ? tipo.questionario : [];
+            var qRows = camposN.map(function(c,i){
+                var v = consulta.questionario && consulta.questionario['campo_'+i];
+                return v ? '<tr><td style="padding:5px 8px;font-weight:500;color:#374151;width:45%">'+c.pergunta+'</td><td style="padding:5px 8px;">'+v+'</td></tr>' : '';
+            }).join('');
+            if(qRows) secoes += '<h4 style="margin:14px 0 6px;color:#047857">📋 Questionário Clínico</h4><table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #e5e7eb;">'+qRows+'</table>';
+            // MRS
+            var mrs = consulta.questionario && consulta.questionario._mrs;
+            if(mrs){
+                var sc = mrs.total<=4?'#d1fae5;color:#065f46':mrs.total<=8?'#fef9c3;color:#854d0e':mrs.total<=15?'#ffedd5;color:#9a3412':'#fee2e2;color:#991b1b';
+                var sl = mrs.total<=4?'Sem/Mínima':mrs.total<=8?'Ligeira':mrs.total<=15?'Moderada':'Grave';
+                secoes += '<h4 style="margin:14px 0 6px;color:#9d174d">📊 MRS — Escala de Menopausa</h4>'
+                    +'<div style="background:#fdf4f9;padding:12px;border-radius:8px;border:1px solid #f9a8d4;">'
+                    +'<strong style="font-size:18px;color:#9d174d">Total: '+mrs.total+'/44</strong> &nbsp;'
+                    +'<span style="background:#'+sc+';padding:3px 12px;border-radius:999px;font-size:12px;">'+sl+'</span>'
+                    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;font-size:12px;">'
+                    +'<div>Somático: <strong>'+((mrs.sub&&mrs.sub.somatic)||0)+'</strong>/20</div>'
+                    +'<div>Psicológico: <strong>'+((mrs.sub&&mrs.sub.psych)||0)+'</strong>/16</div>'
+                    +'<div>Urogenital: <strong>'+((mrs.sub&&mrs.sub.uro)||0)+'</strong>/12</div></div></div>';
+            }
+            // Testes
+            if(consulta.testes&&consulta.testes.length>0){
+                secoes += '<h4 style="margin:14px 0 6px;color:#047857">🧪 Testes POC</h4><ul style="font-size:13px;padding-left:18px;">'
+                    +consulta.testes.map(function(t){
+                        var vals = t.valores ? Object.entries(t.valores).filter(function(e){return e[1];}).map(function(e){return '<span style="background:#f3f4f6;padding:2px 8px;border-radius:4px;font-size:11px;">'+e[0]+': <strong>'+e[1]+'</strong></span>';}).join(' ') : '';
+                        return '<li style="margin-bottom:6px"><strong>'+t.nome+'</strong> '+vals+'</li>';
+                    }).join('')+'</ul>';
+            }
+            // Suplementos
+            if(consulta.guia&&consulta.guia.suplementos&&consulta.guia.suplementos.length>0){
+                secoes += '<h4 style="margin:14px 0 6px;color:#047857">💊 Suplementação</h4><ul style="font-size:13px;padding-left:18px;">'
+                    +consulta.guia.suplementos.map(function(s){return '<li style="margin-bottom:4px"><strong>'+s.nome+'</strong>'+(s.posologia?' · '+s.posologia:'')+(s.duracao?' · '+s.duracao:'')+'</li>';}).join('')+'</ul>';
+            }
+            // Medidas
+            if(consulta.guia&&consulta.guia.medidas&&consulta.guia.medidas.length>0){
+                secoes += '<h4 style="margin:14px 0 6px;color:#047857">🥗 Medidas Não-Farmacológicas</h4><ul style="font-size:13px;padding-left:18px;">'+consulta.guia.medidas.map(function(m){return '<li>'+m+'</li>';}).join('')+'</ul>';
+            }
+            // Exames
+            if(consulta.guia&&consulta.guia.exames&&consulta.guia.exames.length>0){
+                secoes += '<h4 style="margin:14px 0 6px;color:#047857">🔬 Exames Sugeridos</h4><ul style="font-size:13px;padding-left:18px;">'+consulta.guia.exames.map(function(e){return '<li>'+(e.nome||e)+'</li>';}).join('')+'</ul>';
+            }
+            // Observações e próxima consulta
+            if(consulta.guia&&consulta.guia.observacoes){ secoes += '<h4 style="margin:14px 0 6px;color:#047857">📝 Observações</h4><p style="font-size:13px;">'+consulta.guia.observacoes+'</p>'; }
+            if(consulta.guia&&consulta.guia.proximaConsulta){ secoes += '<p style="margin-top:12px;font-size:13px;"><strong>📅 Próxima consulta:</strong> '+new Date(consulta.guia.proximaConsulta).toLocaleDateString('pt-PT')+'</p>'; }
+
+            document.getElementById('fichaUtenteContent').innerHTML =
+                '<div style="padding:8px;">'
+                +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'
+                +'<div><h3 style="margin:0;font-size:16px;">'+(utente?utente.nome:'Utente')+'</h3>'
+                +'<p style="margin:3px 0;color:#6b7280;font-size:13px;">'+(tipo?tipo.nome:consulta.tipo)+' · '+data+' · '+consulta.farmaceutico+'</p></div>'
+                +'<button class="btn btn-primary btn-small" onclick="gerarGuiaPDF(''+consulta.id+'')">⬇️ Exportar PDF</button>'
+                +'</div><hr style="margin:0 0 12px;">'
+                +(secoes||'<p style="color:#6b7280;font-size:13px;">Sem dados registados.</p>')
+                +'</div>';
+            document.getElementById('fichaUtenteModal').classList.add('active');
         }
 
         // Admin
@@ -4343,7 +4343,258 @@ function selecionarUtenteConsulta(nif) {
 
     carregarDadosUtente();
 }
-    </script>
+    
+
+// ============================================================
+// MÓDULO MRS — MENOPAUSE RATING SCALE
+// ============================================================
+var MRS_QUESTIONS = [
+    { id:'mrs1',  label:'Ondas de calor / suores noturnos',                             domain:'somatic' },
+    { id:'mrs2',  label:'Desconforto cardíaco (palpitações, ritmo irregular)',           domain:'somatic' },
+    { id:'mrs3',  label:'Perturbações do sono (adormecer, manter, acordar cedo)',       domain:'somatic' },
+    { id:'mrs4',  label:'Dores articulares e/ou musculares',                             domain:'somatic' },
+    { id:'mrs5',  label:'Humor deprimido (tristeza, choro, desmotivação)',               domain:'psych'   },
+    { id:'mrs6',  label:'Irritabilidade (nervosismo, tensão, agressividade)',            domain:'psych'   },
+    { id:'mrs7',  label:'Ansiedade (inquietação, ataques de pânico)',                    domain:'psych'   },
+    { id:'mrs8',  label:'Exaustão física e/ou mental (fadiga, memória, concentração)',  domain:'psych'   },
+    { id:'mrs9',  label:'Problemas sexuais (líbido, atividade sexual)',                  domain:'uro'     },
+    { id:'mrs10', label:'Problemas urinários (urgência, perdas, infeções recorrentes)', domain:'uro'     },
+    { id:'mrs11', label:'Secura vaginal / desconforto nas relações sexuais',             domain:'uro'     }
+];
+
+function buildMRSQuestionario() {
+    var rows = MRS_QUESTIONS.map(function(q,i){
+        var cells = [0,1,2,3,4].map(function(v){
+            return '<td style="text-align:center;padding:6px;width:52px;">'
+                +'<input type="radio" name="mrs_'+q.id+'" value="'+v+'" '
+                +'style="width:17px;height:17px;accent-color:#9d174d;cursor:pointer;" '
+                +'onchange="calcMRSAuto()"></td>';
+        }).join('');
+        return '<tr style="border-bottom:1px solid #fce7f3;">'
+            +'<td style="padding:7px 6px;font-size:12px;vertical-align:middle;">'+(i+1)+'. '+q.label+'</td>'
+            +cells+'</tr>';
+    }).join('');
+
+    return '<div style="background:#fdf4f9;border:1px solid #f9a8d4;border-radius:10px;padding:16px;margin-top:16px;">'
+        +'<h4 style="color:#9d174d;margin-bottom:6px;">📊 Escala MRS (Menopause Rating Scale)</h4>'
+        +'<p style="font-size:11px;color:#6b7280;margin-bottom:10px;">'
+        +'Classifique cada sintoma: &nbsp; 0 = Sem sintomas &nbsp;·&nbsp; 1 = Ligeiro &nbsp;·&nbsp; 2 = Moderado &nbsp;·&nbsp; 3 = Grave &nbsp;·&nbsp; 4 = Muito grave</p>'
+        +'<div style="overflow-x:auto;">'
+        +'<table style="width:100%;border-collapse:collapse;font-size:13px;">'
+        +'<thead><tr>'
+        +'<th style="text-align:left;padding:8px;background:#fce7f3;color:#9d174d;border-bottom:2px solid #f9a8d4;">Sintoma</th>'
+        +[0,1,2,3,4].map(function(v){return '<th style="text-align:center;padding:8px;background:#fce7f3;color:#9d174d;border-bottom:2px solid #f9a8d4;width:52px;">'+v+'</th>';}).join('')
+        +'</tr></thead>'
+        +'<tbody>'+rows+'</tbody>'
+        +'</table></div>'
+        +'<div id="mrsScoreBox" style="display:none;margin-top:12px;padding:12px;background:#fff;border-radius:8px;border:1px solid #f9a8d4;">'
+        +'<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">'
+        +'<div><span style="font-size:11px;color:#6b7280">Score Total</span><br>'
+        +'<strong style="font-size:24px;color:#9d174d" id="mrsScoreTotal">0</strong>'
+        +'<span style="font-size:11px;color:#6b7280">/44</span></div>'
+        +'<div id="mrsSeverityBadge" style="padding:5px 14px;border-radius:999px;font-size:12px;font-weight:700;"></div>'
+        +'<div style="flex:1;font-size:12px;color:#6b7280;" id="mrsRecomBox"></div>'
+        +'</div>'
+        +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;font-size:12px;" id="mrsSubScores"></div>'
+        +'</div>'
+        +'<div id="mrsAlertas"></div>'
+        +'</div>';
+}
+
+function calcMRSAuto() {
+    var total = 0;
+    var sub = {somatic:0, psych:0, uro:0};
+    var scores = {};
+    MRS_QUESTIONS.forEach(function(q){
+        var el = document.querySelector('input[name="mrs_'+q.id+'"]:checked');
+        if (el) { var v=parseInt(el.value); scores[q.id]=v; total+=v; sub[q.domain]+=v; }
+    });
+    if (Object.keys(scores).length === 0) return;
+    if (state.currentConsulta) state.currentConsulta._mrsDraft = {total:total, sub:sub, scores:scores};
+
+    var sevBg, sevLabel, recom;
+    if      (total <= 4)  { sevBg='background:#d1fae5;color:#065f46'; sevLabel='Sem / Mínima sintomatologia'; recom='Medidas preventivas de estilo de vida.'; }
+    else if (total <= 8)  { sevBg='background:#fef9c3;color:#854d0e'; sevLabel='Sintomatologia ligeira';       recom='Suplementação preventiva. Reavaliação em 3 meses.'; }
+    else if (total <= 15) { sevBg='background:#ffedd5;color:#9a3412'; sevLabel='Sintomatologia moderada';      recom='Suplementação ativa. Considerar referenciação médica.'; }
+    else                  { sevBg='background:#fee2e2;color:#991b1b'; sevLabel='Sintomatologia grave';          recom='Referenciação médica urgente. Terapêutica de suporte.'; }
+
+    var box = document.getElementById('mrsScoreBox');
+    if (!box) return;
+    box.style.display = 'block';
+    document.getElementById('mrsScoreTotal').textContent = total;
+    var badge = document.getElementById('mrsSeverityBadge');
+    badge.setAttribute('style', 'padding:5px 14px;border-radius:999px;font-size:12px;font-weight:700;'+sevBg);
+    badge.textContent = sevLabel;
+    document.getElementById('mrsRecomBox').textContent = recom;
+    document.getElementById('mrsSubScores').innerHTML =
+        '<div style="background:#fdf4f9;padding:6px 10px;border-radius:6px;">Somático: <strong>'+sub.somatic+'</strong>/20</div>'
+        +'<div style="background:#fdf4f9;padding:6px 10px;border-radius:6px;">Psicológico: <strong>'+sub.psych+'</strong>/16</div>'
+        +'<div style="background:#fdf4f9;padding:6px 10px;border-radius:6px;">Urogenital: <strong>'+sub.uro+'</strong>/12</div>';
+
+    // Alertas clínicos automáticos
+    var utente = state.utentes && state.utentes.find(function(u){return u.nif===(state.currentConsulta&&state.currentConsulta.utenteNIF);});
+    var alertas = [];
+    if (utente) {
+        var pat = ((utente.patologias||[]).join(' ')).toLowerCase();
+        var med = ((utente.medicacao||[]).join(' ')).toLowerCase();
+        var al  = ((utente.alergias||[]).join(' ')).toLowerCase();
+        if (pat.indexOf('mama')>-1||pat.indexOf('cancro')>-1||pat.indexOf('neoplasia')>-1) alertas.push('⚠️ Antecedente neoplásico — evitar isoflavonas/fitoestrogénios sem aval médico.');
+        if (pat.indexOf('trombose')>-1||pat.indexOf('avc')>-1||pat.indexOf('embolia')>-1) alertas.push('⚠️ Tromboembolismo/AVC — precaução com Ómega-3 em dose alta e Vitamina E.');
+        if (med.indexOf('varfarina')>-1||med.indexOf('anticoagulante')>-1||med.indexOf('rivaroxabano')>-1) alertas.push('⚠️ Anticoagulante em curso — Ómega-3 com cautela; evitar isoflavonas em dose alta.');
+        if (al.indexOf('soja')>-1)  alertas.push('⚠️ Alergia à soja — verificar origem das isoflavonas.');
+        if (al.indexOf('trevo')>-1) alertas.push('⚠️ Sensibilidade a trevo-vermelho registada.');
+    }
+    document.getElementById('mrsAlertas').innerHTML = alertas.length
+        ? '<div style="background:#fff7ed;border:1px solid #fb923c;border-radius:8px;padding:10px;margin-top:8px;font-size:12px;color:#9a3412;"><strong>Alertas clínicos automáticos</strong><ul style="margin:4px 0 0 14px;">'+alertas.map(function(a){return '<li>'+a+'</li>';}).join('')+'</ul></div>'
+        : '';
+}
+
+function getMRSScoresFromForm() {
+    var scores = {};
+    if (typeof MRS_QUESTIONS === 'undefined') return scores;
+    MRS_QUESTIONS.forEach(function(q){
+        var el = document.querySelector('input[name="mrs_'+q.id+'"]:checked');
+        if (el) scores[q.id] = parseInt(el.value);
+    });
+    return scores;
+}
+
+
+// ============================================================
+// GERAÇÃO DE PDF — jsPDF
+// ============================================================
+function gerarGuiaPDF(consultaId) {
+    var consulta = state.consultas.find(function(c){return c.id===consultaId;});
+    if (!consulta) { alert('Consulta não encontrada.'); return; }
+    var utente = state.utentes.find(function(u){return u.nif===consulta.utenteNIF;});
+    var tipo   = state.tiposConsulta.find(function(t){return t.id===consulta.tipo;});
+    if (!window.jspdf) { alert('jsPDF não carregado. Verifique a ligação à internet.'); return; }
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF({unit:'mm', format:'a4'});
+    var W = doc.internal.pageSize.getWidth();
+    var y = 0;
+
+    // Header
+    doc.setFillColor(16,185,129); doc.rect(0,0,W,30,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica','bold'); doc.setFontSize(14);
+    doc.text((state.config&&state.config.nome)||'Farmácia da Liga', 14, 13);
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    doc.text('Guia Terapêutico · '+((tipo&&tipo.nome)||consulta.tipo), 14, 21);
+    doc.text(new Date(consulta.data).toLocaleDateString('pt-PT'), W-14, 21, {align:'right'});
+    doc.setTextColor(30,30,30);
+    y = 38;
+
+    function checkPage() { if(y>278){doc.addPage();y=16;} }
+    function addText(txt, bold, x, sz) {
+        checkPage();
+        x = x||14; sz = sz||10; bold = bold||false;
+        doc.setFontSize(sz); doc.setFont('helvetica', bold?'bold':'normal');
+        var lines = doc.splitTextToSize(String(txt), W-x-10);
+        lines.forEach(function(l){ checkPage(); doc.text(l,x,y); y+=5.5; });
+    }
+    function addSection(title, rgb) {
+        checkPage();
+        rgb = rgb||[4,120,87];
+        doc.setFillColor(209,250,229); doc.rect(12,y-3,W-24,8,'F');
+        doc.setFont('helvetica','bold'); doc.setFontSize(10);
+        doc.setTextColor(rgb[0],rgb[1],rgb[2]);
+        doc.text(title,14,y+2);
+        doc.setTextColor(30,30,30); doc.setFont('helvetica','normal');
+        y += 10;
+    }
+
+    addSection('Identificação do Utente');
+    addText('Utente: '+((utente&&utente.nome)||'N/D'));
+    if (utente&&utente.dataNascimento) addText('Data Nasc.: '+new Date(utente.dataNascimento).toLocaleDateString('pt-PT'));
+    if (utente&&utente.nif) addText('NIF: '+utente.nif);
+    addText('Farmacêutico: '+consulta.farmaceutico);
+    addText('Data Consulta: '+new Date(consulta.data).toLocaleString('pt-PT'));
+    y += 3;
+
+    // Questionário normal
+    var camposN = (tipo&&tipo.questionario)||[];
+    var qData = camposN.map(function(c,i){return {label:c.pergunta, val:consulta.questionario&&consulta.questionario['campo_'+i]};}).filter(function(r){return r.val;});
+    if (qData.length > 0) {
+        addSection('Questionário Clínico');
+        qData.forEach(function(r){ addText('• '+r.label+': '+r.val, false, 18, 9); });
+        y += 2;
+    }
+
+    // MRS
+    var mrs = consulta.questionario&&consulta.questionario._mrs;
+    if (mrs) {
+        var sl = mrs.total<=4?'Sem/Mínima':mrs.total<=8?'Ligeira':mrs.total<=15?'Moderada':'Grave';
+        addSection('Escala MRS — Menopausa', [157,23,77]);
+        addText('Score Total: '+mrs.total+'/44  |  Classificação: '+sl, true);
+        addText('Somático: '+((mrs.sub&&mrs.sub.somatic)||0)+'/20  |  Psicológico: '+((mrs.sub&&mrs.sub.psych)||0)+'/16  |  Urogenital: '+((mrs.sub&&mrs.sub.uro)||0)+'/12', false, 18, 9);
+        if (mrs.scores && typeof MRS_QUESTIONS !== 'undefined') {
+            MRS_QUESTIONS.forEach(function(q,i){
+                addText((i+1)+'. '+q.label+' — '+(mrs.scores[q.id]||0)+'/4', false, 20, 8.5);
+            });
+        }
+        y += 2;
+    }
+
+    // Testes POC
+    if (consulta.testes&&consulta.testes.length>0) {
+        addSection('Testes POC');
+        consulta.testes.forEach(function(t){
+            addText('• '+t.nome, true, 18);
+            if (t.valores) Object.entries(t.valores).filter(function(e){return e[1];}).forEach(function(e){ addText('  '+e[0]+': '+e[1], false, 24, 9); });
+        });
+        y += 2;
+    }
+
+    // Suplementos
+    if (consulta.guia&&consulta.guia.suplementos&&consulta.guia.suplementos.length>0) {
+        addSection('Suplementação Recomendada');
+        consulta.guia.suplementos.forEach(function(s){
+            addText('• '+s.nome, true, 18);
+            if (s.posologia) addText('  Posologia: '+s.posologia, false, 24, 9);
+            if (s.duracao)   addText('  Duração: '+s.duracao,   false, 24, 9);
+            if (s.indicacao) addText('  Indicação: '+s.indicacao, false, 24, 9);
+        });
+        y += 2;
+    }
+
+    // Medidas
+    if (consulta.guia&&consulta.guia.medidas&&consulta.guia.medidas.length>0) {
+        addSection('Medidas Não-Farmacológicas');
+        consulta.guia.medidas.forEach(function(m){ addText('• '+m, false, 18, 9); });
+        y += 2;
+    }
+
+    // Exames
+    if (consulta.guia&&consulta.guia.exames&&consulta.guia.exames.length>0) {
+        addSection('Exames Sugeridos');
+        consulta.guia.exames.forEach(function(e){ addText('• '+(e.nome||e), false, 18, 9); });
+        y += 2;
+    }
+
+    if (consulta.guia&&consulta.guia.observacoes) {
+        addSection('Observações');
+        addText(consulta.guia.observacoes);
+        y += 2;
+    }
+    if (consulta.guia&&consulta.guia.proximaConsulta) {
+        addText('Próxima consulta: '+new Date(consulta.guia.proximaConsulta).toLocaleDateString('pt-PT'), true);
+    }
+
+    // Footer
+    var pages = doc.internal.getNumberOfPages();
+    for (var i=1; i<=pages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7.5); doc.setTextColor(150);
+        doc.text(((state.config&&state.config.nome)||'Farmácia da Liga')+' · '+((state.config&&state.config.morada)||'Vila Nova de Gaia')+' · Pág '+i+'/'+pages, W/2, 292, {align:'center'});
+        doc.setTextColor(30,30,30);
+    }
+
+    var nomeFile = ((utente&&utente.nome)||'utente').replace(/\s+/g,'_');
+    var dataFile = new Date(consulta.data).toLocaleDateString('pt-PT').replace(/\//g,'-');
+    doc.save('Guia_'+nomeFile+'_'+consulta.tipo+'_'+dataFile+'.pdf');
+}
+
+</script>
 </body>
 </html>
-
