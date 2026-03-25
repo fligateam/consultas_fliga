@@ -4486,19 +4486,6 @@ function selecionarUtenteConsulta(nif) {
 // ============================================================
 // MÓDULO MRS — MENOPAUSE RATING SCALE
 // ============================================================
-var MRS_QUESTIONS = [
-    { id:'mrs1',  label:'Ondas de calor / suores noturnos',                             domain:'somatic' },
-    { id:'mrs2',  label:'Desconforto cardíaco (palpitações, ritmo irregular)',           domain:'somatic' },
-    { id:'mrs3',  label:'Perturbações do sono (adormecer, manter, acordar cedo)',       domain:'somatic' },
-    { id:'mrs4',  label:'Dores articulares e/ou musculares',                             domain:'somatic' },
-    { id:'mrs5',  label:'Humor deprimido (tristeza, choro, desmotivação)',               domain:'psych'   },
-    { id:'mrs6',  label:'Irritabilidade (nervosismo, tensão, agressividade)',            domain:'psych'   },
-    { id:'mrs7',  label:'Ansiedade (inquietação, ataques de pânico)',                    domain:'psych'   },
-    { id:'mrs8',  label:'Exaustão física e/ou mental (fadiga, memória, concentração)',  domain:'psych'   },
-    { id:'mrs9',  label:'Problemas sexuais (líbido, atividade sexual)',                  domain:'uro'     },
-    { id:'mrs10', label:'Problemas urinários (urgência, perdas, infeções recorrentes)', domain:'uro'     },
-    { id:'mrs11', label:'Secura vaginal / desconforto nas relações sexuais',             domain:'uro'     }
-];
 
 function buildMRSQuestionario() {
     var rows = MRS_QUESTIONS.map(function(q,i){
