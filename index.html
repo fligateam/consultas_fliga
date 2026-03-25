@@ -4244,23 +4244,23 @@ function toggleSuplementoAtivo(id) {
 }
 
 function renderSuplementosView() {
-   // Esconder todas as tabs do admin
-    document.querySelectorAll('.adminView .tab-content').forEach(function(c) {
+    // Esconder todas as tabs do admin (usar #adminView em vez de .adminView)
+    document.querySelectorAll('#adminView .tab-content').forEach(function(c) {
         c.classList.remove('active');
         c.style.display = 'none';
     });
-    document.querySelectorAll('.adminView .tab').forEach(function(t) {
+    document.querySelectorAll('#adminView .tab').forEach(function(t) {
         t.classList.remove('active');
     });
-    
-    // Mostrar só suplementos
+
+    // Mostrar só a tab de suplementos
     var suplementosTab = document.getElementById('suplementosTab');
     if (suplementosTab) {
         suplementosTab.classList.add('active');
         suplementosTab.style.display = 'block';
     }
-    
-    renderSuplementosTabela();  // ou a função que renderiza a tabela dos suplementos
+
+    renderSuplementosTabela();
 }
 
 function filterSuplemetos() {
