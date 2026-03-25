@@ -2500,6 +2500,11 @@ function showAdminTab(tabName) {
         tabEl.classList.add('active');
         tabEl.style.display = 'block';
     }
+
+    if (tabName === 'tipos') renderTiposConsulta();
+    if (tabName === 'testes') renderTestesPOC();
+    if (tabName === 'users') renderUtilizadores();
+    if (tabName === 'suplementos') renderSuplementosAdmin();
 }
 
         function showConsultaTab(tabName) {
@@ -3574,16 +3579,21 @@ function selecionarSupCatalogo(supId, idx) {
 }
 
         // Admin
-        function renderAdmin() {
-            if (state.currentUser.role !== 'admin') return;
-            
-            document.getElementById('farmNome').value = state.config.nome;
-            document.getElementById('farmDiretora').value = state.config.diretora;
-            document.getElementById('farmMorada').value = state.config.morada;
-            document.getElementById('farmTelefone').value = state.config.telefone;
-            document.getElementById('farmEmail').value = state.config.email;
-            document.getElementById('farmWebsite').value = state.config.website;
-        }
+      function renderAdmin() {
+    if (state.currentUser.role !== 'admin') return;
+    
+    document.getElementById('farmNome').value = state.config.nome;
+    document.getElementById('farmDiretora').value = state.config.diretora;
+    document.getElementById('farmMorada').value = state.config.morada;
+    document.getElementById('farmTelefone').value = state.config.telefone;
+    document.getElementById('farmEmail').value = state.config.email;
+    document.getElementById('farmWebsite').value = state.config.website;
+
+    renderTiposConsulta();
+    renderTestesPOC();
+    renderUtilizadores();
+    renderSuplementosAdmin();
+}
 
         function salvarDadosFarmacia() {
             state.config.nome = document.getElementById('farmNome').value;
