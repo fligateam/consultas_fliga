@@ -603,13 +603,15 @@
             border-bottom-color: var(--color-primary);
         }
 
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
+        .hidden {
+    display: none !important;
+}
+.tab-content {
+    display: none;
+}
+.tab-content.active {
+    display: block;
+}
 
         .info-box {
             background: #EFF6FF;
@@ -2464,31 +2466,41 @@ state.suplementos.forEach(sup => {
             document.getElementById('protocolosBtn').classList.add('hidden');
         }
 
-        // Navegação
-        function showView(viewName) {
-            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            
-            document.getElementById(viewName + 'View').classList.remove('hidden');
-            event.target.classList.add('active');
-            
-            if (viewName === 'dashboard') updateDashboard();
-            if (viewName === 'utentes') renderUtentes();
-            if (viewName === 'consultas') renderConsultas();
-            if (viewName === 'protocolos') renderProtocolos();
-            if (viewName === 'admin') renderAdmin();
-if (viewName === 'suplementos') renderSuplementosView();
-        }
+function showView(viewName) {
+    document.querySelectorAll('.view').forEach(v => {
+        v.classList.add('hidden');
+        v.style.display = 'none';
+    });
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+    const viewEl = document.getElementById(viewName + 'View');
+    if (viewEl) {
+        viewEl.classList.remove('hidden');
+        viewEl.style.display = 'block';
+    }
+    event.target.classList.add('active');
+
+    if (viewName === 'dashboard') updateDashboard();
+    if (viewName === 'utentes') renderUtentes();
+    if (viewName === 'consultas') renderConsultas();
+    if (viewName === 'protocolos') renderProtocolos();
+    if (viewName === 'admin') renderAdmin();
+    if (viewName === 'suplementos') renderSuplementosView();
+}
 
 function showAdminTab(tabName) {
     document.querySelectorAll('#adminView .tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('#adminView .tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('#adminView .tab-content').forEach(c => {
+        c.classList.remove('active');
+        c.style.display = 'none';
+    });
+
     event.target.classList.add('active');
-    document.getElementById(tabName + 'Tab').classList.add('active');
-    if (tabName === 'tipos') renderTiposConsulta();
-    if (tabName === 'testes') renderTestesPOC();
-    if (tabName === 'users') renderUtilizadores();
-    if (tabName === 'suplementos') renderSuplementosAdmin(); // ← NOVO
+    const tabEl = document.getElementById(tabName + 'Tab');
+    if (tabEl) {
+        tabEl.classList.add('active');
+        tabEl.style.display = 'block';
+    }
 }
 
         function showConsultaTab(tabName) {
