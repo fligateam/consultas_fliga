@@ -2683,88 +2683,161 @@ function renderQuestionario() {
     const tipoId = state.currentConsulta.tipo;
     const tipo = state.tiposConsulta.find(t => t.id === tipoId);
     const container = document.getElementById('questionarioContent');
+
     if (!tipo || !tipo.questionario || tipo.questionario.length === 0) {
-        container.innerHTML = '<div class="info-box"><p>Este tipo de consulta não tem questionário configurado. Configure em Administração > Tipos de Consulta.</p></div>';
-        if (tipoId === 'menopausa') container.innerHTML += buildMRSQuestionario();
+        container.innerHTML = '<div class="info-box"><p>Sem questionário configurado. Adicione campos em Administração > Tipos de Consulta.</p></div>';
+        if (tipoId === 'menopausa') {
+            container.innerHTML += buildMRSQuestionario();
+        }
         return;
     }
+
     const respostasAnteriores = state.currentConsulta._respostasAnteriores || {};
-    const dataAnterior = state.currentConsulta._dataUltimaConsulta ? new Date(state.currentConsulta._dataUltimaConsulta).toLocaleDateString('pt-PT') : null;
-    const avisoAnterior = dataAnterior ? '<div class="info-box info-box-warning" style="margin-bottom:1rem;"><div class="info-box-title">⚠️ Consulta anterior encontrada (' + dataAnterior + ')</div><div class="info-box-text">Respostas anteriores destacadas a amarelo. Confirme se ainda são válidas.</div></div>' : '';
-    const html = tipo.questionario.map((campo, idx) => {
-        let inputHtml = '';
-        const valorAtual = state.currentConsulta.questionario['campo_' + idx] || '';
-        const valorAnterior = respostasAnteriores['campo_' + idx] || '';
+    const dataAnterior = state.currentConsulta._dataUltimaConsulta
+        ? new Date(state.currentConsulta._dataUltimaConsulta).toLocaleDateString('pt-PT')
+        : null;
+
+    const avisoAnterior = dataAnterior
+        ? '<div class="info-box info-box-warning" style="margin-bottom:1rem;">'
+            + '<div class="info-box-title">Consulta anterior (' + dataAnterior + ')</div>'
+            + '<div class="info-box-text">Respostas anteriores destacadas a amarelo. Confirme se ainda são válidas.</div>'
+          + '</div>'
+        : '';
+
+    const campos = tipo.questionario;
+    let html = '';
+
+    for (let idx = 0; idx < campos.length; idx++) {
+        const campo = campos[idx];
+        const valorAtual     = state.currentConsulta.questionario['campo_' + idx] || '';
+        const valorAnterior  = respostasAnteriores['campo_' + idx] || '';
         const usandoAnterior = !valorAtual && !!valorAnterior;
-        const valorMostrar = valorAtual || valorAnterior;
-        const estiloAnterior = usandoAnterior ? 'background:#fefce8;border-color:#f59e0b;border-width:2px;' : '';
-        const labelAnterior = usandoAnterior ? '<span style="font-size:0.72rem;color:#d97706;display:block;margin-bottom:0.25rem;">🕐 Resposta anterior — confirme</span>' : '';
-        switch (campo.tipo) {
-            case 'texto':
-                inputHtml = labelAnterior + '<input type="text" class="form-input" id="quest_' + idx + '" value="' + valorMostrar + '" style="' + estiloAnterior + '" oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;" ' + (campo.obrigatorio ? 'required' : '') + '>';
-                break;
-            case 'numero':
-                inputHtml = labelAnterior + '<input type="number" class="form-input" id="quest_' + idx + '" value="' + valorMostrar + '" style="' + estiloAnterior + '" oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;" ' + (campo.obrigatorio ? 'required' : '') + '>';
-                break;
-            case 'data':
-                inputHtml = labelAnterior + '<input type="date" class="form-input" id="quest_' + idx + '" value="' + valorMostrar + '" style="' + estiloAnterior + '" oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;" ' + (campo.obrigatorio ? 'required' : '') + '>';
-                break;
-            case 'textarea':
-                inputHtml = labelAnterior + '<textarea class="form-textarea" id="quest_' + idx + '" rows="3" style="' + estiloAnterior + '" oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;" ' + (campo.obrigatorio ? 'required' : '') + '>' + valorMostrar + '</textarea>';
-                break;
-            case 'escolha':
-                inputHtml = labelAnterior + '<select class="form-select" id="quest_' + idx + '" style="' + estiloAnterior + '" onchange="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;" ' + (campo.obrigatorio ? 'required' : '') + '><option value="">Selecione...</option>' + campo.opcoes.map(function(opt) { return '<option value="' + opt + '" ' + (valorMostrar === opt ? 'selected' : '') + '>' + opt + '</option>'; }).join('') + '</select>';
-                break;
-            case 'multipla':
-                var valoresAtuais = valorMostrar ? valorMostrar.split('|||') : [];
-                inputHtml = labelAnterior + '<div class="checkbox-group" style="' + (estiloAnterior ? 'padding:0.5rem;border-radius:8px;' + estiloAnterior : '') + '">' + campo.opcoes.map(function(opt, optIdx) { return '<label class="checkbox-label"><input type="checkbox" id="quest_' + idx + '_' + optIdx + '" value="' + opt + '" ' + (valoresAtuais.indexOf(opt) > -1 ? 'checked' : '') + '><span>' + opt + '</span></label>'; }).join('') + '</div>';
-                break;
+        const val            = valorAtual || valorAnterior;
+
+        const estiloAnterior = usandoAnterior
+            ? 'background:#fefce8;border-color:#f59e0b;border-width:2px;'
+            : '';
+        const labelAnterior  = usandoAnterior
+            ? '<span style="font-size:0.72rem;color:#d97706;display:block;margin-bottom:0.25rem;">Resposta anterior — confirme</span>'
+            : '';
+
+        const fieldId = 'quest_' + idx;
+        const reqAttr = campo.obrigatorio ? ' required' : '';
+        let inputHtml = '';
+
+        if (campo.tipo === 'texto') {
+            inputHtml = labelAnterior
+                + '<input type="text" class="form-input" id="' + fieldId + '"'
+                + ' value="' + val + '" style="' + estiloAnterior + '"'
+                + ' oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;"'
+                + reqAttr + '>';
+        } else if (campo.tipo === 'numero') {
+            inputHtml = labelAnterior
+                + '<input type="number" class="form-input" id="' + fieldId + '"'
+                + ' value="' + val + '" style="' + estiloAnterior + '"'
+                + ' oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;"'
+                + reqAttr + '>';
+        } else if (campo.tipo === 'data') {
+            inputHtml = labelAnterior
+                + '<input type="date" class="form-input" id="' + fieldId + '"'
+                + ' value="' + val + '" style="' + estiloAnterior + '"'
+                + ' oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;"'
+                + reqAttr + '>';
+        } else if (campo.tipo === 'textarea') {
+            inputHtml = labelAnterior
+                + '<textarea class="form-textarea" id="' + fieldId + '" rows="3"'
+                + ' style="' + estiloAnterior + '"'
+                + ' oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;"'
+                + reqAttr + '>' + val + '</textarea>';
+        } else if (campo.tipo === 'escolha') {
+            const opts = campo.opcoes.map(function (o) {
+                return '<option value="' + o + '"' + (val === o ? ' selected' : '') + '>' + o + '</option>';
+            }).join('');
+            inputHtml = labelAnterior
+                + '<select class="form-select" id="' + fieldId + '"'
+                + ' style="' + estiloAnterior + '"'
+                + ' onchange="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;"'
+                + reqAttr + '>'
+                + '<option value="">Selecione...</option>' + opts
+                + '</select>';
+        } else if (campo.tipo === 'multipla') {
+            const valoresAtuais = val ? val.split('|||') : [];
+            const checks = campo.opcoes.map(function (o, oi) {
+                return '<label class="checkbox-label">'
+                    + '<input type="checkbox" id="' + fieldId + '_' + oi + '" value="' + o + '"'
+                    + (valoresAtuais.indexOf(o) > -1 ? ' checked' : '') + '>'
+                    + '<span>' + o + '</span>'
+                    + '</label>';
+            }).join('');
+            inputHtml = labelAnterior
+                + '<div class="checkbox-group" id="cbg_' + idx + '"'
+                + ' style="' + (estiloAnterior ? 'padding:0.5rem;border-radius:8px;' + estiloAnterior : '') + '">'
+                + checks + '</div>';
         }
-        return '<div class="form-group"><label class="form-label">' + campo.pergunta + (campo.obrigatorio ? ' *' : '') + '</label>' + inputHtml + '</div>';
-    }).join('');
+
+        html += '<div class="form-group">'
+            + '<label class="form-label" for="' + fieldId + '">'
+            + campo.pergunta + (campo.obrigatorio ? ' *' : '')
+            + '</label>' + inputHtml + '</div>';
+    }
+
     const mrsHtml = (tipoId === 'menopausa') ? buildMRSQuestionario() : '';
     container.innerHTML = avisoAnterior + html + mrsHtml;
-    tipo.questionario.forEach(function(campo, idx) {
-        if (campo.tipo === 'multipla') {
-            campo.opcoes.forEach(function(opt, optIdx) {
-                var cb = document.getElementById('quest_' + idx + '_' + optIdx);
-                if (cb) cb.addEventListener('change', function() {
-                    var all = document.querySelectorAll('[id^="quest_' + idx + '_"]');
-                    state.currentConsulta.questionario['campo_' + idx] = Array.from(all).filter(function(c){return c.checked;}).map(function(c){return c.value;}).join('|||');
-                    var g = cb.closest('.checkbox-group'); if(g) g.style = '';
-                });
+
+    // Listeners para multipla escolha
+    for (let idx = 0; idx < campos.length; idx++) {
+        if (campos[idx].tipo === 'multipla') {
+            campos[idx].opcoes.forEach(function (o, oi) {
+                const cb = document.getElementById('quest_' + idx + '_' + oi);
+                if (cb) {
+                    cb.addEventListener('change', function () {
+                        const all = document.querySelectorAll('[id^="quest_' + idx + '_"]');
+                        state.currentConsulta.questionario['campo_' + idx] =
+                            Array.from(all)
+                                .filter(function (c) { return c.checked; })
+                                .map(function (c) { return c.value; })
+                                .join('|||');
+                        const g = document.getElementById('cbg_' + idx);
+                        if (g) g.style = '';
+                    });
+                }
             });
         }
-    });
+    }
 }
-
    function renderTestesConsulta() {
     const container = document.getElementById('testesContent');
-    if (state.currentConsulta.testes.length === 0) {
+
+    if (!state.currentConsulta.testes || state.currentConsulta.testes.length === 0) {
         container.innerHTML = '<p class="text-secondary">Nenhum teste adicionado. Clique em "+ Adicionar Teste" para começar.</p>';
         return;
     }
+
     container.innerHTML = state.currentConsulta.testes.map((teste, idx) => {
         const testePOC = state.testesPOC.find(t => t.id === teste.testePOCId);
         if (!testePOC) return '';
+
         const camposHtml = testePOC.campos.map((campo) => {
             const valor = teste.valores[campo.nome] || '';
-            const interpretacao = valor ? interpretarValor(parseFloat(valor), campo.min, campo.max) : '';
-            return `<div class="field-row">
-                <div class="form-group">
-                    <label class="form-label">${campo.nome} (${campo.unidade})</label>
-                    <input type="number" class="form-input" value="${valor}"
-                           onchange="atualizarValorTeste(${idx}, '${campo.nome}', this.value)"
-                           placeholder="Min: ${campo.min}, Max: ${campo.max}">
-                </div>
-                ${interpretacao ? `<span class="badge badge-${interpretacao.classe}">${interpretacao.texto}</span>` : ''}
-            </div>`;
+            const interpretacao = valor ? interpretarValor(parseFloat(valor), campo.min, campo.max) : null;
+
+            return '<div class="field-row">'
+                + '<div class="form-group">'
+                + '<label class="form-label">' + campo.nome + ' (' + campo.unidade + ')</label>'
+                + '<input type="number" class="form-input" value="' + valor + '"'
+                + ' onchange="atualizarValorTeste(' + idx + ', \'' + campo.nome + '\', this.value)"'
+                + ' placeholder="Min: ' + campo.min + ', Max: ' + campo.max + '">'
+                + '</div>'
+                + (interpretacao ? '<span class="badge badge-' + interpretacao.classe + '">' + interpretacao.texto + '</span>' : '')
+                + '</div>';
         }).join('');
+
         let imcHtml = '';
         if (testePOC.id === 'imc' && teste.valores['Peso'] && teste.valores['Altura']) {
             const peso = parseFloat(teste.valores['Peso']);
             const altura = parseFloat(teste.valores['Altura']) / 100;
             const imc = (peso / (altura * altura)).toFixed(1);
+
             let texto = '', emoji = '';
             if      (imc < 18.5) { texto = 'Baixo peso';        emoji = '⚠️'; }
             else if (imc < 25)   { texto = 'Peso normal';        emoji = '✅'; }
@@ -2772,25 +2845,30 @@ function renderQuestionario() {
             else if (imc < 35)   { texto = 'Obesidade grau I';   emoji = '🔴'; }
             else if (imc < 40)   { texto = 'Obesidade grau II';  emoji = '🔴'; }
             else                 { texto = 'Obesidade grau III'; emoji = '🔴'; }
+
             state.currentConsulta.testes[idx].valores['IMC'] = imc;
-            imcHtml = `<div class="info-box" style="margin-top:0.75rem;">
-                <div class="info-box-title">🧮 IMC Calculado: <strong>${imc} kg/m²</strong></div>
-                <div class="info-box-text">${emoji} <strong>${texto}</strong></div>
-            </div>`;
+
+            imcHtml = '<div class="info-box" style="margin-top:0.75rem;">'
+                + '<div class="info-box-title">🧮 IMC Calculado: <strong>' + imc + ' kg/m²</strong></div>'
+                + '<div class="info-box-text">' + emoji + ' <strong>' + texto + '</strong></div>'
+                + '</div>';
         }
-        return `<div class="item-card" style="margin-bottom:1rem;">
-            <div class="item-header">
-                <div class="item-title">${testePOC.nome}</div>
-                <button class="icon-btn delete" onclick="removerTeste(${idx})" title="Remover">🗑️</button>
-            </div>
-            ${camposHtml}
-            ${imcHtml}
-            <div class="form-group" style="margin-top:0.5rem;">
-                <label class="form-label">Observações</label>
-                <textarea class="form-textarea" rows="2"
-                    onchange="state.currentConsulta.testes[${idx}].observacoes = this.value">${teste.observacoes || ''}</textarea>
-            </div>
-        </div>`;
+
+        return '<div class="item-card" style="margin-bottom:1rem;">'
+            + '<div class="item-header">'
+            + '<div class="item-title">' + testePOC.nome + '</div>'
+            + '<button class="icon-btn delete" onclick="removerTeste(' + idx + ')" title="Remover">🗑️</button>'
+            + '</div>'
+            + camposHtml
+            + imcHtml
+            + '<div class="form-group" style="margin-top:0.5rem;">'
+            + '<label class="form-label">Observações</label>'
+            + '<textarea class="form-textarea" rows="2"'
+            + ' onchange="state.currentConsulta.testes[' + idx + '].observacoes=this.value">'
+            + (teste.observacoes || '')
+            + '</textarea>'
+            + '</div>'
+            + '</div>';
     }).join('');
 }
         function interpretarValor(valor, min, max) {
@@ -3112,6 +3190,28 @@ function selecionarSupCatalogo(supId, idx) {
                     }
                 } catch(e) { console.warn('MRS capture error:', e); }
             }
+                        // Capturar MRS se preenchido
+            try {
+                if (typeof getMRSScoresFromForm === 'function') {
+                    const _mrsScores = getMRSScoresFromForm();
+                    if (Object.keys(_mrsScores).length > 0 && typeof MRS_QUESTIONS !== 'undefined') {
+                        let _mrsTotal = 0;
+                        const _mrsSub = { somatic: 0, psych: 0, uro: 0 };
+                        MRS_QUESTIONS.forEach(q => {
+                            const v = _mrsScores[q.id] || 0;
+                            _mrsTotal += v;
+                            _mrsSub[q.domain] += v;
+                        });
+                        state.currentConsulta.questionario._mrs = {
+                            total: _mrsTotal,
+                            sub: _mrsSub,
+                            scores: _mrsScores
+                        };
+                    }
+                }
+            } catch (e) {
+                console.warn('MRS capture:', e);
+            }
             const consulta = {
                 id: Date.now().toString(),
                 utenteNIF: state.currentConsulta.utenteNIF,
@@ -3139,69 +3239,125 @@ function selecionarSupCatalogo(supId, idx) {
         }
 
         function abrirConsulta(id) {
-            var consulta = state.consultas.find(function(c){return c.id===id;});
-            if (!consulta) return;
-            var utente = state.utentes.find(function(u){return u.nif===consulta.utenteNIF;});
-            var tipo   = state.tiposConsulta.find(function(t){return t.id===consulta.tipo;});
-            var data   = new Date(consulta.data).toLocaleString('pt-PT');
-            var secoes = '';
-            // Campos questionario normais
-            var camposN = (tipo && tipo.questionario) ? tipo.questionario : [];
-            var qRows = camposN.map(function(c,i){
-                var v = consulta.questionario && consulta.questionario['campo_'+i];
-                return v ? '<tr><td style="padding:5px 8px;font-weight:500;color:#374151;width:45%">'+c.pergunta+'</td><td style="padding:5px 8px;">'+v+'</td></tr>' : '';
-            }).join('');
-            if(qRows) secoes += '<h4 style="margin:14px 0 6px;color:#047857">📋 Questionário Clínico</h4><table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #e5e7eb;">'+qRows+'</table>';
-            // MRS
-            var mrs = consulta.questionario && consulta.questionario._mrs;
-            if(mrs){
-                var sc = mrs.total<=4?'#d1fae5;color:#065f46':mrs.total<=8?'#fef9c3;color:#854d0e':mrs.total<=15?'#ffedd5;color:#9a3412':'#fee2e2;color:#991b1b';
-                var sl = mrs.total<=4?'Sem/Mínima':mrs.total<=8?'Ligeira':mrs.total<=15?'Moderada':'Grave';
-                secoes += '<h4 style="margin:14px 0 6px;color:#9d174d">📊 MRS — Escala de Menopausa</h4>'
-                    +'<div style="background:#fdf4f9;padding:12px;border-radius:8px;border:1px solid #f9a8d4;">'
-                    +'<strong style="font-size:18px;color:#9d174d">Total: '+mrs.total+'/44</strong> &nbsp;'
-                    +'<span style="background:#'+sc+';padding:3px 12px;border-radius:999px;font-size:12px;">'+sl+'</span>'
-                    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;font-size:12px;">'
-                    +'<div>Somático: <strong>'+((mrs.sub&&mrs.sub.somatic)||0)+'</strong>/20</div>'
-                    +'<div>Psicológico: <strong>'+((mrs.sub&&mrs.sub.psych)||0)+'</strong>/16</div>'
-                    +'<div>Urogenital: <strong>'+((mrs.sub&&mrs.sub.uro)||0)+'</strong>/12</div></div></div>';
-            }
-            // Testes
-            if(consulta.testes&&consulta.testes.length>0){
-                secoes += '<h4 style="margin:14px 0 6px;color:#047857">🧪 Testes POC</h4><ul style="font-size:13px;padding-left:18px;">'
-                    +consulta.testes.map(function(t){
-                        var vals = t.valores ? Object.entries(t.valores).filter(function(e){return e[1];}).map(function(e){return '<span style="background:#f3f4f6;padding:2px 8px;border-radius:4px;font-size:11px;">'+e[0]+': <strong>'+e[1]+'</strong></span>';}).join(' ') : '';
-                        return '<li style="margin-bottom:6px"><strong>'+t.nome+'</strong> '+vals+'</li>';
-                    }).join('')+'</ul>';
-            }
-            // Suplementos
-            if(consulta.guia&&consulta.guia.suplementos&&consulta.guia.suplementos.length>0){
-                secoes += '<h4 style="margin:14px 0 6px;color:#047857">💊 Suplementação</h4><ul style="font-size:13px;padding-left:18px;">'
-                    +consulta.guia.suplementos.map(function(s){return '<li style="margin-bottom:4px"><strong>'+s.nome+'</strong>'+(s.posologia?' · '+s.posologia:'')+(s.duracao?' · '+s.duracao:'')+'</li>';}).join('')+'</ul>';
-            }
-            // Medidas
-            if(consulta.guia&&consulta.guia.medidas&&consulta.guia.medidas.length>0){
-                secoes += '<h4 style="margin:14px 0 6px;color:#047857">🥗 Medidas Não-Farmacológicas</h4><ul style="font-size:13px;padding-left:18px;">'+consulta.guia.medidas.map(function(m){return '<li>'+m+'</li>';}).join('')+'</ul>';
-            }
-            // Exames
-            if(consulta.guia&&consulta.guia.exames&&consulta.guia.exames.length>0){
-                secoes += '<h4 style="margin:14px 0 6px;color:#047857">🔬 Exames Sugeridos</h4><ul style="font-size:13px;padding-left:18px;">'+consulta.guia.exames.map(function(e){return '<li>'+(e.nome||e)+'</li>';}).join('')+'</ul>';
-            }
-            // Observações e próxima consulta
-            if(consulta.guia&&consulta.guia.observacoes){ secoes += '<h4 style="margin:14px 0 6px;color:#047857">📝 Observações</h4><p style="font-size:13px;">'+consulta.guia.observacoes+'</p>'; }
-            if(consulta.guia&&consulta.guia.proximaConsulta){ secoes += '<p style="margin-top:12px;font-size:13px;"><strong>📅 Próxima consulta:</strong> '+new Date(consulta.guia.proximaConsulta).toLocaleDateString('pt-PT')+'</p>'; }
+    const consulta = state.consultas.find(c => c.id === id);
+    if (!consulta) return;
 
-            document.getElementById('fichaUtenteContent').innerHTML =
-                '<div style="padding:8px;">'
-                +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'
-                +'<div><h3 style="margin:0;font-size:16px;">'+(utente?utente.nome:'Utente')+'</h3>'
-                +'<p style="margin:3px 0;color:#6b7280;font-size:13px;">'+(tipo?tipo.nome:consulta.tipo)+' · '+data+' · '+consulta.farmaceutico+'</p></div>'
-                +'<button class="btn btn-primary btn-small" onclick="gerarGuiaPDF(''+consulta.id+'')">⬇️ Exportar PDF</button>'
-                +'</div><hr style="margin:0 0 12px;">'
-                +(secoes||'<p style="color:#6b7280;font-size:13px;">Sem dados registados.</p>')
-                +'</div>';
-            document.getElementById('fichaUtenteModal').classList.add('active');
-        }
+    const utente = state.utentes.find(u => u.nif === consulta.utenteNIF);
+    const tipo   = state.tiposConsulta.find(t => t.id === consulta.tipo);
+    const data   = new Date(consulta.data).toLocaleString('pt-PT');
+
+    let secoes = '';
+
+    // Questionário
+    const camposN = (tipo && tipo.questionario) ? tipo.questionario : [];
+    const qRows = camposN.map((c, i) => {
+        const v = consulta.questionario && consulta.questionario['campo_' + i];
+        return v
+            ? '<tr><td style="padding:5px 8px;font-weight:500;color:#374151;width:45%">' + c.pergunta + '</td>'
+                + '<td style="padding:5px 8px;">' + v + '</td></tr>'
+            : '';
+    }).join('');
+    if (qRows) {
+        secoes += '<h4 style="margin:14px 0 6px;color:#047857">📋 Questionário Clínico</h4>'
+            + '<table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #e5e7eb;">'
+            + qRows + '</table>';
+    }
+
+    // MRS
+    const mrs = consulta.questionario && consulta.questionario._mrs;
+    if (mrs) {
+        const sevStyle = mrs.total <= 4  ? '#d1fae5;color:#065f46'
+                       : mrs.total <= 8  ? '#fef9c3;color:#854d0e'
+                       : mrs.total <= 15 ? '#ffedd5;color:#9a3412'
+                                          : '#fee2e2;color:#991b1b';
+        const sevLabel = mrs.total <= 4  ? 'Sem/Mínima'
+                       : mrs.total <= 8  ? 'Ligeira'
+                       : mrs.total <= 15 ? 'Moderada'
+                                          : 'Grave';
+
+        secoes += '<h4 style="margin:14px 0 6px;color:#9d174d">📊 MRS — Escala de Menopausa</h4>'
+            + '<div style="background:#fdf4f9;padding:12px;border-radius:8px;border:1px solid #f9a8d4;">'
+            + '<strong style="font-size:18px;color:#9d174d">Total: ' + mrs.total + '/44</strong> &nbsp;'
+            + '<span style="background:' + sevStyle + ';padding:3px 12px;border-radius:999px;font-size:12px;">' + sevLabel + '</span>'
+            + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;font-size:12px;">'
+            + '<div>Somático: <strong>' + ((mrs.sub && mrs.sub.somatic) || 0) + '</strong>/20</div>'
+            + '<div>Psicológico: <strong>' + ((mrs.sub && mrs.sub.psych)   || 0) + '</strong>/16</div>'
+            + '<div>Urogenital: <strong>'  + ((mrs.sub && mrs.sub.uro)     || 0) + '</strong>/12</div>'
+            + '</div></div>';
+    }
+
+    // Testes
+    if (consulta.testes && consulta.testes.length > 0) {
+        const tRows = consulta.testes.map(t => {
+            const vals = t.valores
+                ? Object.entries(t.valores)
+                    .filter(([k, v]) => v)
+                    .map(([k, v]) => '<span style="background:#f3f4f6;padding:2px 8px;border-radius:4px;font-size:11px;">'
+                        + k + ': <strong>' + v + '</strong></span>')
+                    .join(' ')
+                : '';
+            return '<li style="margin-bottom:6px"><strong>' + t.nome + '</strong> ' + vals + '</li>';
+        }).join('');
+        secoes += '<h4 style="margin:14px 0 6px;color:#047857">🧪 Testes POC</h4>'
+            + '<ul style="font-size:13px;padding-left:18px;">' + tRows + '</ul>';
+    }
+
+    // Suplementos
+    if (consulta.guia && consulta.guia.suplementos && consulta.guia.suplementos.length > 0) {
+        const sRows = consulta.guia.suplementos.map(s =>
+            '<li style="margin-bottom:4px"><strong>' + s.nome + '</strong>'
+            + (s.posologia ? ' · ' + s.posologia : '')
+            + (s.duracao   ? ' · ' + s.duracao   : '')
+            + '</li>'
+        ).join('');
+        secoes += '<h4 style="margin:14px 0 6px;color:#047857">💊 Suplementação</h4>'
+            + '<ul style="font-size:13px;padding-left:18px;">' + sRows + '</ul>';
+    }
+
+    // Medidas
+    if (consulta.guia && consulta.guia.medidas && consulta.guia.medidas.length > 0) {
+        secoes += '<h4 style="margin:14px 0 6px;color:#047857">🥗 Medidas Não-Farmacológicas</h4>'
+            + '<ul style="font-size:13px;padding-left:18px;">'
+            + consulta.guia.medidas.map(m => '<li>' + m + '</li>').join('')
+            + '</ul>';
+    }
+
+    // Exames
+    if (consulta.guia && consulta.guia.exames && consulta.guia.exames.length > 0) {
+        secoes += '<h4 style="margin:14px 0 6px;color:#047857">🔬 Exames Sugeridos</h4>'
+            + '<ul style="font-size:13px;padding-left:18px;">'
+            + consulta.guia.exames.map(e => '<li>' + (e.nome || e) + '</li>').join('')
+            + '</ul>';
+    }
+
+    if (consulta.guia && consulta.guia.observacoes) {
+        secoes += '<h4 style="margin:14px 0 6px;color:#047857">📝 Observações</h4>'
+            + '<p style="font-size:13px;">' + consulta.guia.observacoes + '</p>';
+    }
+
+    if (consulta.guia && consulta.guia.proximaConsulta) {
+        secoes += '<p style="margin-top:12px;font-size:13px;"><strong>📅 Próxima consulta:</strong> '
+            + new Date(consulta.guia.proximaConsulta).toLocaleDateString('pt-PT')
+            + '</p>';
+    }
+
+    document.getElementById('fichaUtenteContent').innerHTML =
+        '<div style="padding:8px;">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'
+        + '<div>'
+        + '<h3 style="margin:0;font-size:16px;">' + (utente ? utente.nome : 'Utente') + '</h3>'
+        + '<p style="margin:3px 0;color:#6b7280;font-size:13px;">'
+        + (tipo ? tipo.nome : consulta.tipo) + ' · ' + data + ' · ' + consulta.farmaceutico
+        + '</p>'
+        + '</div>'
+        + '<button class="btn btn-primary btn-small" onclick="gerarGuiaPDF(\'' + consulta.id + '\')">⬇️ Exportar PDF</button>'
+        + '</div>'
+        + '<hr style="margin:0 0 12px;">'
+        + (secoes || '<p style="color:#6b7280;font-size:13px;">Sem dados registados.</p>')
+        + '</div>';
+
+    document.getElementById('fichaUtenteModal').classList.add('active');
+}
 
         // Admin
         function renderAdmin() {
@@ -4587,7 +4743,130 @@ function gerarGuiaPDF(consultaId) {
     var dataFile = new Date(consulta.data).toLocaleDateString('pt-PT').replace(/\//g,'-');
     doc.save('Guia_'+nomeFile+'_'+consulta.tipo+'_'+dataFile+'.pdf');
 }
+// MRS — Menopause Rating Scale
+const MRS_QUESTIONS = [
+    { id:'mrs1',  label:'Ondas de calor / suores noturnos',                              domain:'somatic' },
+    { id:'mrs2',  label:'Desconforto cardíaco (palpitações, ritmo irregular)',           domain:'somatic' },
+    { id:'mrs3',  label:'Perturbações do sono (adormecer, manter, acordar cedo)',        domain:'somatic' },
+    { id:'mrs4',  label:'Dores articulares e/ou musculares',                             domain:'somatic' },
+    { id:'mrs5',  label:'Humor deprimido (tristeza, choro, desmotivação)',               domain:'psych'   },
+    { id:'mrs6',  label:'Irritabilidade (nervosismo, tensão, agressividade)',            domain:'psych'   },
+    { id:'mrs7',  label:'Ansiedade (inquietação, ataques de pânico)',                    domain:'psych'   },
+    { id:'mrs8',  label:'Exaustão física e mental (fadiga, memória, concentração)',      domain:'psych'   },
+    { id:'mrs9',  label:'Problemas sexuais (líbido, atividade sexual)',                  domain:'uro'     },
+    { id:'mrs10', label:'Problemas urinários (urgência, perdas, infeções recorrentes)',  domain:'uro'     },
+    { id:'mrs11', label:'Secura vaginal / desconforto nas relações sexuais',             domain:'uro'     }
+];
 
+function buildMRSQuestionario() {
+    const rows = MRS_QUESTIONS.map((q, i) => {
+        const cells = [0,1,2,3,4].map(v =>
+            '<td style="text-align:center;padding:6px;width:52px;">'
+          + '<input type="radio" name="mrs_' + q.id + '" value="' + v + '"'
+          + ' style="width:17px;height:17px;accent-color:#9d174d;cursor:pointer;"'
+          + ' onchange="calcMRSAuto()"></td>'
+        ).join('');
+        return '<tr style="border-bottom:1px solid #fce7f3;">'
+          + '<td style="padding:7px 6px;font-size:12px;vertical-align:middle;">' + (i+1) + '. ' + q.label + '</td>'
+          + cells + '</tr>';
+    }).join('');
+    const headers = [0,1,2,3,4].map(v =>
+        '<th style="text-align:center;padding:8px;background:#fce7f3;color:#9d174d;border-bottom:2px solid #f9a8d4;width:52px;">' + v + '</th>'
+    ).join('');
+    return '<div style="background:#fdf4f9;border:1px solid #f9a8d4;border-radius:10px;padding:16px;margin-top:16px;">'
+      + '<h4 style="color:#9d174d;margin-bottom:6px;">📊 Escala MRS (Menopause Rating Scale)</h4>'
+      + '<p style="font-size:11px;color:#6b7280;margin-bottom:10px;">0 = Sem sintomas · 1 = Ligeiro · 2 = Moderado · 3 = Grave · 4 = Muito grave</p>'
+      + '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">'
+      + '<thead><tr>'
+      + '<th style="text-align:left;padding:8px;background:#fce7f3;color:#9d174d;border-bottom:2px solid #f9a8d4;">Sintoma</th>'
+      + headers + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
+      + '<div id="mrsScoreBox" style="display:none;margin-top:12px;padding:12px;background:#fff;border-radius:8px;border:1px solid #f9a8d4;">'
+      +   '<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">'
+      +     '<div><span style="font-size:11px;color:#6b7280">Score Total</span><br>'
+      +       '<strong style="font-size:24px;color:#9d174d" id="mrsScoreTotal">0</strong>'
+      +       '<span style="font-size:11px;color:#6b7280">/44</span></div>'
+      +     '<div id="mrsSeverityBadge"></div>'
+      +     '<div style="flex:1;font-size:12px;color:#6b7280;" id="mrsRecomBox"></div>'
+      +   '</div>'
+      +   '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;font-size:12px;" id="mrsSubScores"></div>'
+      + '</div>'
+      + '<div id="mrsAlertas"></div>'
+      + '</div>';
+}
+
+function calcMRSAuto() {
+    let total = 0;
+    const sub = { somatic:0, psych:0, uro:0 };
+    const scores = {};
+    MRS_QUESTIONS.forEach(q => {
+        const el = document.querySelector('input[name="mrs_' + q.id + '"]:checked');
+        if (el) {
+            const v = parseInt(el.value);
+            scores[q.id] = v;
+            total += v;
+            sub[q.domain] += v;
+        }
+    });
+    if (Object.keys(scores).length === 0) return;
+    if (state.currentConsulta) {
+        state.currentConsulta._mrsDraft = { total, sub, scores };
+    }
+
+    let sevStyle, sevLabel, recom;
+    if      (total <= 4)  { sevStyle = 'background:#d1fae5;color:#065f46'; sevLabel = 'Sem / Mínima sintomatologia'; recom = 'Medidas preventivas de estilo de vida.'; }
+    else if (total <= 8)  { sevStyle = 'background:#fef9c3;color:#854d0e'; sevLabel = 'Sintomatologia ligeira';       recom = 'Suplementação preventiva. Reavaliação em 3 meses.'; }
+    else if (total <= 15) { sevStyle = 'background:#ffedd5;color:#9a3412'; sevLabel = 'Sintomatologia moderada';      recom = 'Suplementação ativa. Considerar referenciação médica.'; }
+    else                  { sevStyle = 'background:#fee2e2;color:#991b1b'; sevLabel = 'Sintomatologia grave';          recom = 'Referenciação médica urgente.'; }
+
+    const box = document.getElementById('mrsScoreBox');
+    if (!box) return;
+    box.style.display = 'block';
+    document.getElementById('mrsScoreTotal').textContent = total;
+
+    const badge = document.getElementById('mrsSeverityBadge');
+    badge.setAttribute('style', 'padding:5px 14px;border-radius:999px;font-size:12px;font-weight:700;' + sevStyle);
+    badge.textContent = sevLabel;
+
+    document.getElementById('mrsRecomBox').textContent = recom;
+    document.getElementById('mrsSubScores').innerHTML =
+        '<div style="background:#fdf4f9;padding:6px 10px;border-radius:6px;">Somático: <strong>' + sub.somatic + '</strong>/20</div>'
+      + '<div style="background:#fdf4f9;padding:6px 10px;border-radius:6px;">Psicológico: <strong>' + sub.psych + '</strong>/16</div>'
+      + '<div style="background:#fdf4f9;padding:6px 10px;border-radius:6px;">Urogenital: <strong>' + sub.uro + '</strong>/12</div>';
+
+    const utente = state.utentes && state.utentes.find(u => u.nif === (state.currentConsulta && state.currentConsulta.utenteNIF));
+    const alertas = [];
+    if (utente) {
+        const pat = ((utente.patologias || []).join(' ')).toLowerCase();
+        const med = ((utente.medicacao  || []).join(' ')).toLowerCase();
+        const al  = ((utente.alergias   || []).join(' ')).toLowerCase();
+        if (pat.includes('mama') || pat.includes('cancro') || pat.includes('neoplasia'))
+            alertas.push('Antecedente neoplásico — evitar isoflavonas / fitoestrogénios sem aval médico.');
+        if (pat.includes('trombose') || pat.includes('avc') || pat.includes('embolia'))
+            alertas.push('Tromboembolismo/AVC — precaução com Ómega-3 em dose alta e Vitamina E.');
+        if (med.includes('varfarina') || med.includes('anticoagulante') || med.includes('rivaroxabano'))
+            alertas.push('Anticoagulante em curso — Ómega-3 com cautela; isoflavonas com precaução.');
+        if (al.includes('soja'))
+            alertas.push('Alergia à soja — verificar origem das isoflavonas.');
+    }
+    document.getElementById('mrsAlertas').innerHTML = alertas.length
+        ? '<div style="background:#fff7ed;border:1px solid #fb923c;border-radius:8px;padding:10px;margin-top:8px;font-size:12px;color:#9a3412;">'
+          + '<strong>Alertas clínicos automáticos</strong>'
+          + '<ul style="margin:4px 0 0 14px;">' + alertas.map(a => '<li>' + a + '</li>').join('') + '</ul>'
+          + '</div>'
+        : '';
+}
+
+function getMRSScoresFromForm() {
+    const scores = {};
+    if (typeof MRS_QUESTIONS === 'undefined') return scores;
+    MRS_QUESTIONS.forEach(q => {
+        const el = document.querySelector('input[name="mrs_' + q.id + '"]:checked');
+        if (el) scores[q.id] = parseInt(el.value);
+    });
+    return scores;
+}
+
+// gerarGuiaPDF(…) — bloco completo de PDF que já te posso enviar se quiseres também
 </script>
 </body>
 </html>
