@@ -2925,7 +2925,6 @@ function renderQuestionario() {
     const tipo = state.tiposConsulta.find(t => t.id === tipoId);
     const container = document.getElementById('questionarioContent');
 
-    // MRS sempre aparece no fim para menopausa
     const mrsHtml = tipoId === 'menopausa' ? buildMRSQuestionario() : '';
 
     if (!tipo || !tipo.questionario || tipo.questionario.length === 0) {
@@ -2941,7 +2940,7 @@ function renderQuestionario() {
     const avisoAnterior = dataAnterior
         ? '<div class="info-box info-box-warning" style="margin-bottom:1rem;">'
             + '<div class="info-box-title">Consulta anterior (' + dataAnterior + ')</div>'
-            + '<div class="info-box-text">Respostas anteriores destacadas a amarelo. Confirme se ainda são válidas.</div>'
+            + '<div class="info-box-text">Respostas anteriores destacadas a amarelo.</div>'
           + '</div>'
         : '';
 
@@ -2950,14 +2949,11 @@ function renderQuestionario() {
 
     for (let idx = 0; idx < campos.length; idx++) {
         const campo = campos[idx];
-        const valorAtual     = state.currentConsulta.questionario['campo_' + idx] || '';
-        const valorAnterior  = respostasAnteriores['campo_' + idx] || '';
+        const valorAtual    = state.currentConsulta.questionario['campo_' + idx] || '';
+        const valorAnterior = respostasAnteriores['campo_' + idx] || '';
         const usandoAnterior = !valorAtual && !!valorAnterior;
-        const val            = valorAtual || valorAnterior;
-
-        const estiloAnterior = usandoAnterior
-            ? 'background:#fefce8;border-color:#f59e0b;border-width:2px;'
-            : '';
+        const val           = valorAtual || valorAnterior;
+        const estiloAnterior = usandoAnterior ? 'background:#fefce8;border-color:#f59e0b;border-width:2px;' : '';
         const labelAnterior  = usandoAnterior
             ? '<span style="font-size:0.72rem;color:#d97706;display:block;margin-bottom:0.25rem;">Resposta anterior — confirme</span>'
             : '';
@@ -2967,64 +2963,49 @@ function renderQuestionario() {
         let inputHtml = '';
 
         if (campo.tipo === 'texto') {
-            inputHtml = labelAnterior
-                + '<input type="text" class="form-input" id="' + fieldId + '"'
-                + ' value="' + val + '" style="' + estiloAnterior + '"'
-                + ' oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;"'
-                + reqAttr + '>';
+            inputHtml = labelAnterior + '<input type="text" class="form-input" id="' + fieldId + '" value="' + val + '" style="' + estiloAnterior + '" oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;"' + reqAttr + '>';
         } else if (campo.tipo === 'numero') {
-            inputHtml = labelAnterior
-                + '<input type="number" class="form-input" id="' + fieldId + '"'
-                + ' value="' + val + '" style="' + estiloAnterior + '"'
-                + ' oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;"'
-                + reqAttr + '>';
+            inputHtml = labelAnterior + '<input type="number" class="form-input" id="' + fieldId + '" value="' + val + '" style="' + estiloAnterior + '" oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;"' + reqAttr + '>';
         } else if (campo.tipo === 'data') {
-            inputHtml = labelAnterior
-                + '<input type="date" class="form-input" id="' + fieldId + '"'
-                + ' value="' + val + '" style="' + estiloAnterior + '"'
-                + ' oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;"'
-                + reqAttr + '>';
+            inputHtml = labelAnterior + '<input type="date" class="form-input" id="' + fieldId + '" value="' + val + '" style="' + estiloAnterior + '" oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;"' + reqAttr + '>';
         } else if (campo.tipo === 'textarea') {
-            inputHtml = labelAnterior
-                + '<textarea class="form-textarea" id="' + fieldId + '" rows="3"'
-                + ' style="' + estiloAnterior + '"'
-                + ' oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;"'
-                + reqAttr + '>' + val + '</textarea>';
+            inputHtml = labelAnterior + '<textarea class="form-textarea" id="' + fieldId + '" rows="3" style="' + estiloAnterior + '" oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;"' + reqAttr + '>' + val + '</textarea>';
         } else if (campo.tipo === 'escolha') {
-            const opts = campo.opcoes.map(function (o) {
+            const opts = campo.opcoes.map(function(o) {
                 return '<option value="' + o + '"' + (val === o ? ' selected' : '') + '>' + o + '</option>';
             }).join('');
-            inputHtml = labelAnterior
-                + '<select class="form-select" id="' + fieldId + '"'
-                + ' style="' + estiloAnterior + '"'
-                + ' onchange="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;"'
-                + reqAttr + '>'
-                + '<option value="">Selecione...</option>' + opts
-                + '</select>';
+            inputHtml = labelAnterior + '<select class="form-select" id="' + fieldId + '" style="' + estiloAnterior + '" onchange="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;"' + reqAttr + '><option value="">Selecione...</option>' + opts + '</select>';
         } else if (campo.tipo === 'multipla') {
             const valoresAtuais = val ? val.split('|||') : [];
-            const checks = campo.opcoes.map(function (o, oi) {
-                return '<label class="checkbox-label">'
-                    + '<input type="checkbox" id="' + fieldId + '_' + oi + '" value="' + o + '"'
-                    + (valoresAtuais.indexOf(o) > -1 ? ' checked' : '') + '>'
-                    + '<span>' + o + '</span>'
-                    + '</label>';
+            const checks = campo.opcoes.map(function(o, oi) {
+                return '<label class="checkbox-label"><input type="checkbox" id="' + fieldId + '_' + oi + '" value="' + o + '"' + (valoresAtuais.indexOf(o) > -1 ? ' checked' : '') + '><span>' + o + '</span></label>';
             }).join('');
-            inputHtml = labelAnterior
-                + '<div class="checkbox-group" id="cbg_' + idx + '"'
-                + ' style="' + (estiloAnterior ? 'padding:0.5rem;border-radius:8px;' + estiloAnterior : '') + '">'
-                + checks + '</div>';
+            inputHtml = labelAnterior + '<div class="checkbox-group" id="cbg_' + idx + '" style="' + (estiloAnterior ? 'padding:0.5rem;border-radius:8px;' + estiloAnterior : '') + '">' + checks + '</div>';
         }
 
-        html += '<div class="form-group">'
-            + '<label class="form-label" for="' + fieldId + '">'
-            + campo.pergunta + (campo.obrigatorio ? ' *' : '')
-            + '</label>' + inputHtml + '</div>';
+        html += '<div class="form-group"><label class="form-label" for="' + fieldId + '">' + campo.pergunta + (campo.obrigatorio ? ' *' : '') + '</label>' + inputHtml + '</div>';
     }
 
-// Apaga a linha duplicada "const mrsHtml = ..."
-// e deixa só a referência ao mrsHtml já declarado no topo
-}
+    // ← container.innerHTML DENTRO da função
+    container.innerHTML = avisoAnterior + html + mrsHtml;
+
+    // Listeners para multipla escolha — DENTRO da função
+    for (let idx = 0; idx < campos.length; idx++) {
+        if (campos[idx].tipo === 'multipla') {
+            campos[idx].opcoes.forEach(function(o, oi) {
+                const cb = document.getElementById('quest_' + idx + '_' + oi);
+                if (cb) {
+                    cb.addEventListener('change', function() {
+                        const all = document.querySelectorAll('[id^="quest_' + idx + '_"]');
+                        state.currentConsulta.questionario['campo_' + idx] = Array.from(all).filter(c => c.checked).map(c => c.value).join('|||');
+                        const g = document.getElementById('cbg_' + idx);
+                        if (g) g.style = '';
+                    });
+                }
+            });
+        }
+    }
+} // ← fecho correto da função
 
     // Listeners para multipla escolha
     for (let idx = 0; idx < campos.length; idx++) {
