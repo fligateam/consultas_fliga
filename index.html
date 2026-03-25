@@ -4929,23 +4929,6 @@ function calcMRSAuto() {
         if (al.includes('soja'))
             alertas.push('Alergia à soja — verificar origem das isoflavonas.');
     }
-    document.getElementById('mrsAlertas').innerHTML = alertas.length
-        ? '<div style="background:#fff7ed;border:1px solid #fb923c;border-radius:8px;padding:10px;margin-top:8px;font-size:12px;color:#9a3412;">'
-          + '<strong>Alertas clínicos automáticos</strong>'
-          + '<ul style="margin:4px 0 0 14px;">' + alertas.map(function(a){ return '<li>' + a + '</li>'; }).join('') + '</ul>'
-          + '</div>'
-        : '';
-}
-
-function getMRSScoresFromForm() {
-    var scores = {};
-    if (typeof MRS_QUESTIONS === 'undefined') return scores;
-    MRS_QUESTIONS.forEach(function(q) {
-        var el = document.querySelector('input[name="mrs_' + q.id + '"]:checked');
-        if (el) scores[q.id] = parseInt(el.value);
-    });
-    return scores;
-}
 
 </script>
 </body>
