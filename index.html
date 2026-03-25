@@ -831,6 +831,7 @@
     <button class="nav-btn" onclick="showView('consultas')">Consultas</button>
     <button class="nav-btn hidden" id="protocolosBtn" onclick="showView('protocolos')">Protocolos</button>
     <button class="nav-btn hidden" id="suplementosNavBtn" onclick="showView('suplementos')">💊 Suplementos</button>
+<button class="nav-btn hidden" id="adminBtn" onclick="showView('admin')">Administração</button>
     <button class="nav-btn hidden" id="adminBtn" onclick="showView('admin')">Administração</button>
 </div>
             </div>
@@ -4223,7 +4224,13 @@ function toggleSuplementoAtivo(id) {
 }
 
 function renderSuplementosView() {
-    renderSuplementosTabela('suplementosViewTableBody', document.getElementById('searchSuplemento')?.value || '');
+    document.querySelectorAll('.adminView .tab-content').forEach(c => {
+        c.classList.remove('active');
+        c.style.display = 'none';
+    });
+    document.querySelectorAll('.adminView .tab').forEach(t => t.classList.remove('active'));
+    
+    showAdminTab('suplementos');
 }
 
 function filterSuplemetos() {
