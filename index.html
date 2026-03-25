@@ -2808,7 +2808,7 @@ function renderQuestionario() {
 
 
 function renderTestesConsulta() {
-    const container = document.getElementById('testesContent');
+    const container = document.getElementById("testesContent");
 
     if (!state.currentConsulta.testes || state.currentConsulta.testes.length === 0) {
         container.innerHTML = '<p class="text-secondary">Nenhum teste adicionado. Clique em "+ Adicionar Teste" para começar.</p>';
@@ -2816,12 +2816,12 @@ function renderTestesConsulta() {
     }
 
     container.innerHTML = state.currentConsulta.testes.map(function(teste, idx) {
-        const testePOC = state.testesPOC.find(function(t) { return t.id === teste.testePOCId; });
+        var testePOC = state.testesPOC.find(function(t) { return t.id === teste.testePOCId; });
         if (!testePOC) return '';
 
-        const camposHtml = testePOC.campos.map(function(campo) {
-            const valor = teste.valores[campo.nome] || '';
-            const interpretacao = valor ? interpretarValor(parseFloat(valor), campo.min, campo.max) : null;
+        var camposHtml = testePOC.campos.map(function(campo) {
+            var valor = teste.valores[campo.nome] || '';
+            var interpretacao = valor ? interpretarValor(parseFloat(valor), campo.min, campo.max) : null;
             return '<div class="field-row">'
                 + '<div class="form-group">'
                 + '<label class="form-label">' + campo.nome + ' (' + campo.unidade + ')</label>'
@@ -2837,85 +2837,52 @@ function renderTestesConsulta() {
 
         var imcHtml = '';
         if (testePOC.id === 'imc' && teste.valores['Peso'] && teste.valores['Altura']) {
-            const peso = parseFloat(teste.valores['Peso']);
-            const altura = parseFloat(teste.valores['Altura']) / 100;
-            const imc = (peso / (altura * altura)).toFixed(1);
-            var texto = '', emoji = '';
+            var peso = parseFloat(teste.valores['Peso']);
+            var altura = parseFloat(teste.valores['Altura']) / 100;
+            var imc = (peso / (altura * altura)).toFixed(1);
+            var texto = '';
+            var emoji = '';
             if      (imc < 18.5) { texto = 'Baixo peso';        emoji = '⚠️'; }
             else if (imc < 25)   { texto = 'Peso normal';        emoji = '✅'; }
             else if (imc < 30)   { texto = 'Excesso de peso';    emoji = '⚠️'; }
             else if (imc < 35)   { texto = 'Obesidade grau I';   emoji = '⚠️'; }
             else if (imc < 40)   { texto = 'Obesidade grau II';  emoji = '⚠️'; }
             else                 { texto = 'Obesidade grau III'; emoji = '⚠️'; }
+
+            if (!teste.valores) teste.valores = {};
             teste.valores['IMC'] = imc;
-            imcHtml = '<div class="info-box" style="margin-top:0.75rem;">'
-                + '<div class="info-box-title">🧮 IMC: <strong>' + imc + ' kg/m²</strong></div>'
-                + '<div class="info-box-text">' + emoji + ' <strong>' + texto + '</strong></div>'
+
+            imcHtml = ''
+                + '<div class="info-box" style="margin-top:0.75rem;">'
+                +   '<div class="info-box-title">🧮 IMC: <strong>' + imc + ' kg/m²</strong></div>'
+                +   '<div class="info-box-text">' + emoji + ' <strong>' + texto + '</strong></div>'
+                +   '<div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--color-text-secondary);">'
+                +     '<span style="margin-right:1rem;">IMC &lt; 18.5 → Baixo peso</span>'
+                +     '<span style="margin-right:1rem;">18.5–24.9 → Normal</span>'
+                +     '<span style="margin-right:1rem;">25–29.9 → Excesso de peso</span>'
+                +     '<span>≥ 30 → Obesidade</span>'
+                +   '</div>'
                 + '</div>';
         }
 
-        return '<div class="item-card" style="margin-bottom:1rem;">'
-            + '<div class="item-header">'
-            + '<div class="item-title">' + testePOC.nome + '</div>'
-            + '<button class="icon-btn delete" data-idx="' + idx + '" onclick="removerTestePOC(this.dataset.idx)" title="Remover">🗑️</button>'
-            + '</div>'
-            + camposHtml
-            + imcHtml
-            + '<div class="form-group" style="margin-top:0.5rem;">'
-            + '<label class="form-label">Observações</label>'
-            + '<textarea class="form-textarea" rows="2"'
-            + ' data-idx="' + idx + '"'
-            + ' onchange="state.currentConsulta.testes[this.dataset.idx].observacoes = this.value">'
-            + (teste.observacoes || '')
-            + '</textarea>'
-            + '</div>'
+        return ''
+            + '<div class="item-card" style="margin-bottom:1rem;">'
+            +   '<div class="item-header">'
+            +     '<div class="item-title">' + testePOC.nome + '</div>'
+            +     '<button class="icon-btn delete" data-idx="' + idx + '" onclick="removerTestePOC(this.dataset.idx)" title="Remover">🗑️</button>'
+            +   '</div>'
+            +   camposHtml
+            +   imcHtml
+            +   '<div class="form-group" style="margin-top:0.5rem;">'
+            +     '<label class="form-label">Observações</label>'
+            +     '<textarea class="form-textarea" rows="2"'
+            +        ' data-idx="' + idx + '"'
+            +        ' onchange="state.currentConsulta.testes[this.dataset.idx].observacoes = this.value">'
+            +        (teste.observacoes || '')
+            +     '</textarea>'
+            +   '</div>'
             + '</div>';
     }).join('');
-}
-        function interpretarValor(valor, min, max) {
-            if (valor < min) return { classe: 'error', texto: '⚠️ Abaixo do normal' };
-            if (valor > max) return { classe: 'warning', texto: '⚠️ Acima do normal' };
-            return { classe: 'success', texto: '✓ Normal' };
-        }
-
-        function atualizarValorTeste(idx, campo, valor) {
-            state.currentConsulta.testes[idx].valores[campo] = valor;
-            renderTestesConsulta();
-        }
-
-        function adicionarTestePOC() {
-            const testesDisponiveis = state.testesPOC.filter(t => t.ativo);
-            const testesJaAdicionados = state.currentConsulta.testes.map(t => t.testePOCId);
-            const testesRestantes = testesDisponiveis.filter(t => !testesJaAdicionados.includes(t.id));
-            
-            if (testesRestantes.length === 0) {
-                alert('Todos os testes disponíveis já foram adicionados');
-                return;
-            }
-            
-            const escolha = prompt('Escolha um teste:\n\n' + 
-                testesRestantes.map((t, i) => `${i + 1}. ${t.nome}`).join('\n'));
-            
-            const idx = parseInt(escolha) - 1;
-            if (idx >= 0 && idx < testesRestantes.length) {
-                const teste = testesRestantes[idx];
-                state.currentConsulta.testes.push({
-                    testePOCId: teste.id,
-                    nome: teste.nome,
-                    valores: {},
-                    observacoes: ''
-                });
-                renderTestesConsulta();
-            }
-        }
-
-        function removerTestePOC(idx) {
-            if (confirm('Remover este teste?')) {
-                state.currentConsulta.testes.splice(idx, 1);
-                renderTestesConsulta();
-            }
-        }
-
 }
 
 function renderGuiaConsulta() {
