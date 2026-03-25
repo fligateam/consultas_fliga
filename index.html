@@ -1801,15 +1801,26 @@ suplementos: [],
             state.protocolos.push({ id: doc.id, ...doc.data() });
         });
 
-        // Processar suplementos
-        state.suplementos = [];
-        suplementosSnap.forEach(doc => {
-            state.suplementos.push({ id: doc.id, ...doc.data() });
-        });
-        
-        state.lastSync = new Date().toISOString();
-        state.syncStatus = 'synced';
+// Processar suplementos
+state.suplementos = [];
+suplementosSnap.forEach(doc => {
+    state.suplementos.push({ id: doc.id, ...doc.data() });
+});
 
+// NOVO - fallback para localStorage se Firestore estiver vazio
+if (state.suplementos.length === 0) {
+    const local = localStorage.getItem('farmaciaConsultasData');
+    if (local) {
+        try {
+            const d = JSON.parse(local);
+            if (d.suplementos && d.suplementos.length > 0) {
+                state.suplementos = d.suplementos;
+            }
+        } catch(e) {}
+    }
+}
+
+state.lastSync = new Date().toISOString()
         // Backup local
         localStorage.setItem('farmaciaConsultasData', JSON.stringify({
             utentes: state.utentes,
