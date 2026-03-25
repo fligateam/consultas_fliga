@@ -3178,18 +3178,7 @@ function selecionarSupCatalogo(supId, idx) {
             state.currentConsulta.observacoes = document.getElementById('guiaObservacoes').value;
             state.currentConsulta.proximaConsulta = document.getElementById('guiaProximaConsulta').value;
             
-            // Capturar MRS se preenchido
-            if (typeof getMRSScoresFromForm === 'function') {
-                try {
-                    var _mrsScores = getMRSScoresFromForm();
-                    var _hasMRS = Object.keys(_mrsScores).length > 0;
-                    if (_hasMRS && typeof MRS_QUESTIONS !== 'undefined') {
-                        var _mrsTotal = 0; var _mrsSub = {somatic:0,psych:0,uro:0};
-                        MRS_QUESTIONS.forEach(function(q){ var v=_mrsScores[q.id]||0; _mrsTotal+=v; _mrsSub[q.domain]+=v; });
-                        state.currentConsulta.questionario._mrs = {total:_mrsTotal, sub:_mrsSub, scores:_mrsScores};
-                    }
-                } catch(e) { console.warn('MRS capture error:', e); }
-            }
+
                         // Capturar MRS se preenchido
             try {
                 if (typeof getMRSScoresFromForm === 'function') {
