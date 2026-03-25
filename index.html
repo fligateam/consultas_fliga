@@ -832,7 +832,6 @@
     <button class="nav-btn hidden" id="protocolosBtn" onclick="showView('protocolos')">Protocolos</button>
     <button class="nav-btn hidden" id="suplementosNavBtn" onclick="showView('suplementos')">💊 Suplementos</button>
 <button class="nav-btn hidden" id="adminBtn" onclick="showView('admin')">Administração</button>
-    <button class="nav-btn hidden" id="adminBtn" onclick="showView('admin')">Administração</button>
 </div>
             </div>
         </nav>
@@ -2006,7 +2005,18 @@ state.suplementos.forEach(sup => {
             }
         }
 
-        function saveData() {
+        
+function apagarSuplemento(id) {
+    if (!confirm('Apagar este suplemento definitivamente? Esta acao nao pode ser desfeita.')) return;
+    state.suplementos = (state.suplementos || []).filter(function(s) { return s.id !== id; });
+    saveData();
+    renderSuplementosAdmin();
+    if (document.getElementById('suplementosViewTableBody')) {
+        renderSuplementosTabela('suplementosViewTableBody', '');
+    }
+}
+
+function saveData() {
             // Sempre tentar guardar no Firebase
             saveToServer();
         }
@@ -4158,23 +4168,26 @@ function apagarUtilizador(operador) {
             saveData();
         }
 function renderSuplementosAdmin() {
-    const tbody = document.getElementById('suplementosTableBody');
+    var tbody = document.getElementById('suplementosTableBody');
+    if (!tbody) return;
     if (!state.suplementos || state.suplementos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-secondary">Nenhum suplemento configurado</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-secondary">Nenhum suplemento configurado</td></tr>';
         return;
     }
-    tbody.innerHTML = state.suplementos.map(s => `
-        <tr>
-            <td><strong>${s.nome}</strong></td>
-            <td>${s.marca || '-'}</td>
-            <td>${(s.utilizacoes || '').substring(0, 60)}${(s.utilizacoes && s.utilizacoes.length > 60) ? '...' : ''}</td>
-            <td><span class="badge badge-${s.ativo ? 'success' : 'error'}">${s.ativo ? 'Ativo' : 'Inativo'}</span></td>
-            <td>
-                <button class="btn btn-secondary btn-small" onclick="editarSuplemento('${s.id}')">Editar</button>
-                <button class="btn btn-danger btn-small" onclick="toggleSuplementoAtivo('${s.id}')">${s.ativo ? 'Desativar' : 'Ativar'}</button>
-            </td>
-        </tr>
-    `).join('');
+    tbody.innerHTML = state.suplementos.map(function(s) {
+        var toggleBtn = s.ativo
+            ? '<button class="btn btn-small" style="background:#f59e0b;color:white;" onclick="toggleSuplementoAtivo(\"' + s.id + '\")">Desativar</button>'
+            : '<button class="btn btn-small" style="background:#10b981;color:white;" onclick="toggleSuplementoAtivo(\"' + s.id + '\")">Ativar</button>';
+        var editBtn = '<button class="btn btn-secondary btn-small" onclick="editarSuplemento(\"' + s.id + '\")">Editar</button>';
+        var delBtn  = '<button class="btn btn-danger btn-small" onclick="apagarSuplemento(\"' + s.id + '\")">🗑️ Apagar</button>';
+        return '<tr>'
+            + '<td><strong>' + s.nome + '</strong></td>'
+            + '<td>' + (s.marca || '-') + '</td>'
+            + '<td>' + ((s.utilizacoes || '').substring(0, 60)) + ((s.utilizacoes && s.utilizacoes.length > 60) ? '...' : '') + '</td>'
+            + '<td><span class="badge badge-' + (s.ativo ? 'success' : 'error') + '">' + (s.ativo ? 'Ativo' : 'Inativo') + '</span></td>'
+            + '<td>' + editBtn + ' ' + toggleBtn + ' ' + delBtn + '</td>'
+            + '</tr>';
+    }).join('');
 }
 
 function novoSuplemento() {
@@ -4244,23 +4257,7 @@ function toggleSuplementoAtivo(id) {
 }
 
 function renderSuplementosView() {
-    // Esconder todas as tabs do admin (usar #adminView em vez de .adminView)
-    document.querySelectorAll('#adminView .tab-content').forEach(function(c) {
-        c.classList.remove('active');
-        c.style.display = 'none';
-    });
-    document.querySelectorAll('#adminView .tab').forEach(function(t) {
-        t.classList.remove('active');
-    });
-
-    // Mostrar só a tab de suplementos
-    var suplementosTab = document.getElementById('suplementosTab');
-    if (suplementosTab) {
-        suplementosTab.classList.add('active');
-        suplementosTab.style.display = 'block';
-    }
-
-    renderSuplementosTabela();
+    renderSuplementosTabela('suplementosViewTableBody', '');
 }
 
 function filterSuplemetos() {
