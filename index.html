@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Farmácia da Liga - Gestão de Consultas v2.0</title>
+    <title>Farmácia da Liga - Gestão de Consultas</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -603,15 +602,13 @@
             border-bottom-color: var(--color-primary);
         }
 
-        .hidden {
-    display: none !important;
-}
-.tab-content {
-    display: none;
-}
-.tab-content.active {
-    display: block;
-}
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
 
         .info-box {
             background: #EFF6FF;
@@ -1075,7 +1072,7 @@
                     </div>
                 </div>
 
-  <div id="usersTab" class="tab-content">
+                <div id="usersTab" class="tab-content">
                     <div class="card">
                         <div class="card-header">
                             <h3 class="card-title">Utilizadores</h3>
@@ -1098,8 +1095,10 @@
                         </div>
                     </div>
                 </div>
-
-                <div id="suplementosTab" class="tab-content">
+            </div>
+        </main>
+    </div>
+<div id="suplementosTab" class="tab-content">
                     <div class="card">
                         <div class="card-header">
                             <h3 class="card-title">💊 Gestão de Suplementos</h3>
@@ -1122,9 +1121,8 @@
                     </div>
                 </div>
 
-            </div> <!-- fecho adminView -->
+            </div>  ← fecho do adminView
         </main>
-        
     <!-- Modal Novo Utente -->
     <div id="novoUtenteModal" class="modal">
         <div class="modal-content">
@@ -1801,26 +1799,15 @@ suplementos: [],
             state.protocolos.push({ id: doc.id, ...doc.data() });
         });
 
-// Processar suplementos
-state.suplementos = [];
-suplementosSnap.forEach(doc => {
-    state.suplementos.push({ id: doc.id, ...doc.data() });
-});
+        // Processar suplementos
+        state.suplementos = [];
+        suplementosSnap.forEach(doc => {
+            state.suplementos.push({ id: doc.id, ...doc.data() });
+        });
+        
+        state.lastSync = new Date().toISOString();
+        state.syncStatus = 'synced';
 
-// NOVO - fallback para localStorage se Firestore estiver vazio
-if (state.suplementos.length === 0) {
-    const local = localStorage.getItem('farmaciaConsultasData');
-    if (local) {
-        try {
-            const d = JSON.parse(local);
-            if (d.suplementos && d.suplementos.length > 0) {
-                state.suplementos = d.suplementos;
-            }
-        } catch(e) {}
-    }
-}
-
-state.lastSync = new Date().toISOString()
         // Backup local
         localStorage.setItem('farmaciaConsultasData', JSON.stringify({
             utentes: state.utentes,
@@ -2091,232 +2078,13 @@ state.suplementos.forEach(sup => {
 
         function inicializarTiposConsulta() {
             return [
-               {
-    id: 'menopausa',
-    nome: 'Menopausa',
-    cor: '#EC4899',
-    pocDefaultIds: ['fsh', 'pressao_arterial', 'perfil_lipidico'],
-    ativo: true,
-    questionario: [
-
-        // ══════════════════════════════════════
-        // 1. IDENTIFICAÇÃO E ANAMNESE GERAL
-        // ══════════════════════════════════════
-        { id:'q_idade',           pergunta:'Idade',                                                           tipo:'numero',  obrigatorio:true },
-        { id:'q_profissao',       pergunta:'Profissão / contexto laboral',                                    tipo:'escolha',
-          opcoes:['Ativa – trabalho presencial','Ativa – trabalho remoto','Trabalhadora por turnos','Desempregada','Reformada','Outra'], obrigatorio:false },
-        { id:'q_fase',            pergunta:'Fase climatérica',                                                tipo:'escolha',
-          opcoes:['Pré-menopausa','Perimenopausa','Menopausa (< 5 anos)','Menopausa (≥ 5 anos)','Menopausa cirúrgica','Pós-menopausa'], obrigatorio:true },
-        { id:'q_ult_mens',        pergunta:'Data da última menstruação (aprox.)',                              tipo:'data',    obrigatorio:false },
-        { id:'q_menstruacao_hist',pergunta:'Histórico menstrual antes da menopausa',                          tipo:'escolha',
-          opcoes:['Ciclos regulares','Ciclos irregulares','Amenorreia prévia','Dismenorreia severa','SOP (Síndrome Ovário Poliquístico)'], obrigatorio:false },
-        { id:'q_paridade',        pergunta:'Paridade (número de gestações / partos)',                         tipo:'texto',   obrigatorio:false },
-        { id:'q_thr',             pergunta:'Terapêutica Hormonal de Substituição (THS)',                      tipo:'escolha',
-          opcoes:['Não faz','Sim – estrogénio tópico vaginal','Sim – THS sistémica oral','Sim – THS sistémica transdérmica (gel/adesivo)','Sim – implante hormonal','Suspendeu recentemente (< 1 ano)','Contraindicada'], obrigatorio:true },
-        { id:'q_thr_duracao',     pergunta:'Se faz THS, há quanto tempo?',                                   tipo:'escolha',
-          opcoes:['Menos de 6 meses','6 meses a 1 ano','1 a 3 anos','Mais de 3 anos'], obrigatorio:false },
-        { id:'q_thr_razao_nao',   pergunta:'Se não faz THS, principal razão',                                tipo:'escolha',
-          opcoes:['Contraindicação médica','Opção pessoal','Não lhe foi proposto','Medo de efeitos secundários','Intolerância prévia','Não aplicável'], obrigatorio:false },
-        { id:'q_ginecologia',     pergunta:'Seguimento em consulta de ginecologia',                          tipo:'escolha',
-          opcoes:['Não','Sim – regularmente (≤ 1 ano)','Sim – irregularmente'], obrigatorio:true },
-        { id:'q_ult_ginecologia', pergunta:'Data da última consulta de ginecologia',                         tipo:'data',    obrigatorio:false },
-        { id:'q_mamografia',      pergunta:'Última mamografia / rastreio mamário',                           tipo:'escolha',
-          opcoes:['Há menos de 1 ano','Há 1-2 anos','Há mais de 2 anos','Nunca realizou'], obrigatorio:false },
-        { id:'q_densitometria',   pergunta:'Última densitometria óssea (DEXA)',                              tipo:'escolha',
-          opcoes:['Há menos de 2 anos','Há 2-4 anos','Há mais de 4 anos','Nunca realizou'], obrigatorio:false },
-        { id:'q_pap_smear',       pergunta:'Último rastreio citologia cervical (PAP smear)',                 tipo:'escolha',
-          opcoes:['Há menos de 3 anos','Há mais de 3 anos','Nunca realizou','Não aplicável (histerectomia)'], obrigatorio:false },
-        { id:'q_motivo',          pergunta:'Motivo principal da consulta de hoje',                           tipo:'escolha',
-          opcoes:['Controlo de sintomas vasomotores (afrontamentos/suores)','Saúde óssea / osteoporose','Saúde cardiovascular','Saúde urogenital / atrofia vaginal','Saúde mental / humor / ansiedade','Dermocosmética / pele','Suplementação e nutrição','Revisão de medicação','Rastreio e prevenção','Queda de cabelo / unhas','Outro'], obrigatorio:true },
-
-        // ══════════════════════════════════════
-        // 2. SINTOMAS CLIMATÉRICOS ATUAIS
-        // ══════════════════════════════════════
-        { id:'q_sint_vasomotores', pergunta:'Sintomas vasomotores (afrontamentos / suores nocturnos)',       tipo:'escolha',
-          opcoes:['Ausentes','Ligeiros (não perturbam o dia a dia)','Moderados (perturbam ocasionalmente)','Severos (perturbam muito o sono e atividade)'], obrigatorio:false },
-        { id:'q_sint_urogenital',  pergunta:'Sintomas urogenitais',                                          tipo:'multipla',
-          opcoes:['Secura vaginal','Dor/desconforto nas relações sexuais (dispareunia)','Urgência urinária','Perdas de urina (incontinência)','Infeções urinárias recorrentes','Sem sintomas urogenitais'], obrigatorio:false },
-        { id:'q_libido',           pergunta:'Libido / interesse sexual',                                     tipo:'escolha',
-          opcoes:['Mantida','Diminuída ligeiramente','Diminuída significativamente','Ausente','Não aplicável'], obrigatorio:false },
-        { id:'q_sint_psico',       pergunta:'Sintomas psicológicos / emocionais',                            tipo:'multipla',
-          opcoes:['Irritabilidade / labilidade emocional','Ansiedade','Humor deprimido / tristeza','Dificuldade de concentração / "nevoeiro mental"','Perda de memória de curto prazo','Sem sintomas psicológicos relevantes'], obrigatorio:false },
-        { id:'q_sint_osteoarticular', pergunta:'Sintomas osteoarticulares',                                  tipo:'multipla',
-          opcoes:['Dores articulares (artralgias)','Dores musculares (mialgias)','Rigidez matinal','Sem queixas osteoarticulares'], obrigatorio:false },
-        { id:'q_sint_outros',      pergunta:'Outros sintomas relevantes',                                    tipo:'multipla',
-          opcoes:['Palpitações / ritmo cardíaco irregular','Cefaleias frequentes','Tonturas','Aumento de peso inexplicado','Fadiga persistente','Sem outros sintomas'], obrigatorio:false },
-        { id:'q_impacto_sint',     pergunta:'Impacto global dos sintomas na qualidade de vida',              tipo:'escolha',
-          opcoes:['Sem impacto','Impacto ligeiro','Impacto moderado','Impacto severo (afeta trabalho, relações, sono)'], obrigatorio:false },
-
-        // ══════════════════════════════════════
-        // 3. ESTILO DE VIDA
-        // ══════════════════════════════════════
-        { id:'q_atividade',       pergunta:'Prática de atividade física',                                    tipo:'escolha',
-          opcoes:['Sedentária – não pratica','Ocasional (1x/semana ou menos)','Regular (2-3x/semana)','Intensa (≥4x/semana)'], obrigatorio:true },
-        { id:'q_tipo_atividade',  pergunta:'Tipo(s) de atividade física praticada',                          tipo:'multipla',
-          opcoes:['Caminhada','Corrida','Ginásio/Musculação','Aulas de grupo/yoga','Natação','Ciclismo','Pilates','Dança','Outra'], obrigatorio:false },
-        { id:'q_atividade_obs',   pergunta:'Limitações para a prática de exercício físico',                  tipo:'textarea', obrigatorio:false },
-        { id:'q_alimentacao',     pergunta:'Padrão alimentar predominante',                                   tipo:'escolha',
-          opcoes:['Mediterrânea / equilibrada','Rica em açúcares e gorduras saturadas','Cetogénica','Vegetariana / Vegana','Irregular – pula refeições','Hipocalórica muito restritiva','Outra'], obrigatorio:true },
-        { id:'q_frutas_legumes',  pergunta:'Consumo de frutas e vegetais',                                   tipo:'escolha',
-          opcoes:['≥ 5 porções/dia','3-4 porções/dia','1-2 porções/dia','Raramente consome'], obrigatorio:false },
-        { id:'q_lacticinios',     pergunta:'Consumo de laticínios / cálcio alimentar',                       tipo:'escolha',
-          opcoes:['Adequado (≥ 2-3 porções/dia)','Moderado (1 porção/dia)','Baixo (raramente)','Não consome (intolerância/opção)'], obrigatorio:false },
-        { id:'q_nutricao',        pergunta:'Acompanhamento por profissional de nutrição',                     tipo:'escolha',
-          opcoes:['Não','Sim – atualmente','Sim – no passado'], obrigatorio:false },
-        { id:'q_cafe',            pergunta:'Consumo de café diário',                                         tipo:'escolha',
-          opcoes:['Não consome','1 chávena/dia','2-3 chávenas/dia','4 ou mais chávenas/dia'], obrigatorio:false },
-        { id:'q_alcool',          pergunta:'Consumo de álcool',                                              tipo:'escolha',
-          opcoes:['Não consome','Ocasional (festas/social)','Moderado (até 1 copo/dia)','Elevado (> 1 copo/dia)'], obrigatorio:false },
-        { id:'q_tabaco',          pergunta:'Tabagismo',                                                      tipo:'escolha',
-          opcoes:['Não fumadora','Ex-fumadora (parou há < 5 anos)','Ex-fumadora (parou há ≥ 5 anos)','Fumadora atual – quantidade/dia:'], obrigatorio:false },
-        { id:'q_tabaco_qty',      pergunta:'Se fumadora atual — cigarros por dia (aprox.)',                  tipo:'numero', obrigatorio:false },
-        { id:'q_sono',            pergunta:'Qualidade do sono',                                              tipo:'escolha',
-          opcoes:['Boa (≥ 7h reparadoras)','Dificuldade em adormecer','Acorda frequentemente durante a noite','Acorda muito cedo e não dorme mais','Insónia crónica'], obrigatorio:false },
-        { id:'q_stress',          pergunta:'Nível de stress percecionado',                                   tipo:'escolha',
-          opcoes:['Baixo','Moderado','Elevado','Muito elevado – impacta significativamente o dia a dia'], obrigatorio:false },
-        { id:'q_apoio_social',    pergunta:'Suporte social / familiar percecionado',                         tipo:'escolha',
-          opcoes:['Bom suporte','Suporte moderado','Pouco suporte','Isolamento social'], obrigatorio:false },
-
-        // ══════════════════════════════════════
-        // 4. HISTÓRICO DE SAÚDE
-        // ══════════════════════════════════════
-        { id:'q_patologias',      pergunta:'Problemas de saúde conhecidos (diagnóstico médico)',              tipo:'multipla',
-          opcoes:[
-            'Hipertensão arterial',
-            'Dislipidemia (colesterol / triglicéridos)',
-            'Diabetes Tipo 2 / Pré-diabetes',
-            'Síndrome metabólica',
-            'Doença cardiovascular (EAM, AVC, angina, trombose)',
-            'Osteoporose / Osteopenia',
-            'Alterações hematológicas (anemia, ferropénia)',
-            'Hipotiroidismo',
-            'Hipertiroidismo / Doença de Graves',
-            'Cancro da mama (pessoal)',
-            'Cancro do ovário (pessoal)',
-            'Endometriose',
-            'Cirurgia ginecológica prévia (histerectomia, ooforectomia)',
-            'Atrofia vaginal / Síndrome genitourinária da menopausa',
-            'Depressão / Perturbação de ansiedade',
-            'Fibromialgia',
-            'Doença renal crónica',
-            'Doença hepática',
-            'Nenhuma patologia relevante'
-          ], obrigatorio:false },
-        { id:'q_patologias_outros',   pergunta:'Outros problemas de saúde (especificar)',                    tipo:'textarea', obrigatorio:false },
-        { id:'q_cirurgias',           pergunta:'Cirurgias anteriores relevantes (tipo e data aprox.)',        tipo:'textarea', obrigatorio:false },
-        { id:'q_fraturas',            pergunta:'Fraturas ósseas nos últimos 5 anos',                         tipo:'escolha',
-          opcoes:['Não','Sim – traumática (queda / acidente)','Sim – por fragilidade óssea (sem trauma significativo)'], obrigatorio:false },
-        { id:'q_cancro_familiar',     pergunta:'Histórico familiar de cancro mama/ovário — em quem e grau de parentesco', tipo:'textarea', obrigatorio:false },
-        { id:'q_cardio_familiar',     pergunta:'Histórico familiar de doença cardiovascular prematura (< 65 anos)', tipo:'escolha',
-          opcoes:['Não','Sim – pai / irmão','Sim – mãe / irmã','Desconhece'], obrigatorio:false },
-        { id:'q_alergias',            pergunta:'Alergias conhecidas (fármacos, plantas, alimentos, látex)',   tipo:'textarea', obrigatorio:false },
-
-        // ══════════════════════════════════════
-        // 5. MEDICAÇÃO E SEGURANÇA
-        // ══════════════════════════════════════
-        { id:'q_medicacao',           pergunta:'Medicação crónica atual (nome, dose, frequência)',            tipo:'textarea', obrigatorio:false },
-        { id:'q_suplementos_prev',    pergunta:'Suplementos que toma por iniciativa própria',                 tipo:'textarea', obrigatorio:false },
-        { id:'q_interacoes',          pergunta:'Interações medicamentosas relevantes identificadas',          tipo:'textarea', obrigatorio:false },
-        { id:'q_efeitos_adversos',    pergunta:'Efeitos adversos relevantes da medicação atual',              tipo:'textarea', obrigatorio:false },
-        { id:'q_contra_indicacoes',   pergunta:'Contraindicações / precauções identificadas',                 tipo:'textarea', obrigatorio:false },
-        { id:'q_adesao',              pergunta:'Adesão à terapêutica prescrita',                              tipo:'escolha',
-          opcoes:['Boa adesão – toma sempre como prescrito','Adesão moderada – esquece ocasionalmente','Má adesão – toma raramente','Suspendeu por conta própria'], obrigatorio:false },
-
-        // ══════════════════════════════════════
-        // 6. PARÂMETROS BIOQUÍMICOS E CLÍNICOS
-        // ══════════════════════════════════════
-        { id:'q_parametros_peso',      pergunta:'Peso (kg)',                                                  tipo:'numero', obrigatorio:false },
-        { id:'q_parametros_altura',    pergunta:'Altura (cm)',                                                tipo:'numero', obrigatorio:false },
-        { id:'q_parametros_perimetro', pergunta:'Perímetro abdominal (cm)',                                   tipo:'numero', obrigatorio:false },
-        { id:'q_parametros_pas',       pergunta:'Pressão arterial sistólica – PAS (mmHg)',                    tipo:'numero', obrigatorio:false },
-        { id:'q_parametros_pad',       pergunta:'Pressão arterial diastólica – PAD (mmHg)',                   tipo:'numero', obrigatorio:false },
-        { id:'q_parametros_pulso',     pergunta:'Pulso (bpm)',                                                tipo:'numero', obrigatorio:false },
-        { id:'q_lipidico_ct',          pergunta:'Colesterol total (mg/dL)',                                   tipo:'numero', obrigatorio:false },
-        { id:'q_lipidico_tg',          pergunta:'Triglicéridos (mg/dL)',                                      tipo:'numero', obrigatorio:false },
-        { id:'q_lipidico_hdl',         pergunta:'C-HDL (mg/dL)',                                              tipo:'numero', obrigatorio:false },
-        { id:'q_lipidico_ldl',         pergunta:'C-LDL (mg/dL)',                                              tipo:'numero', obrigatorio:false },
-        { id:'q_lipidico_risco',       pergunta:'Rácio risco cardiovascular (CT/HDL)',                        tipo:'numero', obrigatorio:false },
-        { id:'q_glicemia',             pergunta:'Glicemia em jejum (mg/dL)',                                  tipo:'numero', obrigatorio:false },
-        { id:'q_hba1c',                pergunta:'Hemoglobina A1c – HbA1c (%)',                                tipo:'numero', obrigatorio:false },
-        { id:'q_vitd',                 pergunta:'Vitamina D 25-OH (ng/mL)',                                   tipo:'numero', obrigatorio:false },
-        { id:'q_ferritina',            pergunta:'Ferritina (ng/mL)',                                          tipo:'numero', obrigatorio:false },
-        { id:'q_ferro',                pergunta:'Ferro sérico (µg/dL)',                                       tipo:'numero', obrigatorio:false },
-        { id:'q_tsh',                  pergunta:'TSH – Hormona tiroideia (µUI/mL)',                           tipo:'numero', obrigatorio:false },
-        { id:'q_fsh_val',              pergunta:'FSH (mUI/mL)',                                               tipo:'numero', obrigatorio:false },
-        { id:'q_estradiol',            pergunta:'Estradiol (pg/mL)',                                          tipo:'numero', obrigatorio:false },
-        { id:'q_calcio',               pergunta:'Cálcio sérico (mg/dL)',                                      tipo:'numero', obrigatorio:false },
-        { id:'q_pcr',                  pergunta:'PCR – Proteína C Reativa (mg/L)',                            tipo:'numero', obrigatorio:false },
-        { id:'q_parametros_obs',       pergunta:'Observações sobre parâmetros analíticos',                    tipo:'textarea', obrigatorio:false },
-        { id:'q_analises_previas',     pergunta:'Dados analíticos anteriores fornecidos pela utente',          tipo:'textarea', obrigatorio:false },
-
-        // ══════════════════════════════════════
-        // 7. INQUÉRITO DE DIAGNÓSTICO DE PELE
-        // ══════════════════════════════════════
-        { id:'q_tipo_pele',            pergunta:'Tipo de pele auto-percecionado',                             tipo:'escolha',
-          opcoes:['Normal','Seca','Oleosa','Mista','Sensível / reativa'], obrigatorio:false },
-        { id:'q_fototipo',             pergunta:'Fototipo de Fitzpatrick (tom de pele)',                       tipo:'escolha',
-          opcoes:['I – Muito clara, sempre queima, nunca bronzeia','II – Clara, queima facilmente, bronzeia pouco','III – Intermédia, queima moderadamente, bronzeia','IV – Morena clara, queima raramente, bronzeia bem','V – Morena escura, raramente queima','VI – Muito escura, nunca queima'], obrigatorio:false },
-        { id:'q_exposicao_solar',      pergunta:'Exposição solar habitual',                                   tipo:'escolha',
-          opcoes:['Mínima (trabalho interior, evita sol)','Moderada (fins de semana, passeios)','Elevada (trabalho exterior ou exposição frequente)','Uso de cama de bronzear'], obrigatorio:false },
-        { id:'q_rotina_pele',          pergunta:'Rotina de cuidados de pele atual',                           tipo:'escolha',
-          opcoes:['Não tem rotina','Só desmaquilha / limpa','Limpeza + hidratante','Rotina completa (limpeza, sérum, creme, SPF)','Rotina médico-estética acompanhada (consultório/clínica)'], obrigatorio:false },
-        { id:'q_spf',                  pergunta:'Uso de protetor solar facial',                               tipo:'escolha',
-          opcoes:['Não usa','Só no verão / praia','Todo o ano (em dias de sol)','Diariamente, independentemente do tempo'], obrigatorio:false },
-        { id:'q_preocupacoes_pele',    pergunta:'Principais preocupações de pele',                            tipo:'multipla',
-          opcoes:[
-            'Desidratação',
-            'Pele áspera ao toque',
-            'Flacidez no rosto e/ou pescoço',
-            'Rugas mais evidentes',
-            'Perda de luminosidade / opacidade',
-            'Manchas de pigmentação / hiperpigmentação',
-            'Sensibilidade cutânea',
-            'Acne adulta / impurezas',
-            'Rosácea e/ou vermelhidão',
-            'Aumento da reatividade cutânea',
-            'Queda de cabelo / alopécia',
-            'Unhas fracas / frágeis',
-            'Flacidez corporal',
-            'Celulite',
-            'Outra'
-          ], obrigatorio:false },
-        { id:'q_preocupacoes_outras',  pergunta:'Outra(s) preocupação(ões) de pele (especificar)',            tipo:'textarea', obrigatorio:false },
-        { id:'q_zona_corporal',        pergunta:'Zonas corporais com maior preocupação',                      tipo:'multipla',
-          opcoes:['Rosto','Pescoço e decote','Mãos','Cabelo / couro cabeludo','Corpo (geral)','Zona íntima / vulvar'], obrigatorio:false },
-        { id:'q_tratamentos_previos',  pergunta:'Tratamentos estéticos / dermatológicos anteriores',          tipo:'multipla',
-          opcoes:['Nunca fez','Peeling químico','Laser / IPL','Toxina botulínica (Botox)','Preenchedores de ácido hialurónico','Radiofrequência','Microneedling / Dermapen','Mesoterapia','Outro'], obrigatorio:false },
-        { id:'q_cosmeticos_atuais',    pergunta:'Produtos de cosmética / dermofarmácia que usa atualmente',   tipo:'textarea', obrigatorio:false },
-        { id:'q_reacoes_cosmeticos',   pergunta:'Reações adversas a cosméticos (passado ou atual)',           tipo:'escolha',
-          opcoes:['Nunca teve','Sim – irritação / vermelhidão','Sim – alergia de contacto','Sim – agravamento de acne','Não sabe / não testou'], obrigatorio:false },
-
-        // ══════════════════════════════════════
-        // 8. PLANO DE DERMOCOSMÉTICA
-        // ══════════════════════════════════════
-        { id:'q_plano_dermocos_limpeza', pergunta:'Plano Dermocosmética — Limpeza / desmaquilhagem sugerida', tipo:'textarea', obrigatorio:false },
-        { id:'q_plano_dermocos_serum',   pergunta:'Plano Dermocosmética — Sérum(s) recomendado(s)',           tipo:'textarea', obrigatorio:false },
-        { id:'q_plano_dermocos_creme',   pergunta:'Plano Dermocosmética — Creme(s) recomendado(s)',           tipo:'textarea', obrigatorio:false },
-        { id:'q_plano_dermocos_spf',     pergunta:'Plano Dermocosmética — Fotoproteção recomendada',          tipo:'textarea', obrigatorio:false },
-        { id:'q_plano_dermocos_corpo',   pergunta:'Plano Dermocosmética — Cuidados corporais recomendados',   tipo:'textarea', obrigatorio:false },
-        { id:'q_plano_dermocos_cabelo',  pergunta:'Plano Dermocosmética — Cuidados capilares / unhas',        tipo:'textarea', obrigatorio:false },
-        { id:'q_plano_dermocos_notas',   pergunta:'Notas adicionais sobre plano de dermocosmética',           tipo:'textarea', obrigatorio:false },
-
-        // ══════════════════════════════════════
-        // 9. SUPLEMENTAÇÃO
-        // ══════════════════════════════════════
-        { id:'q_suplementos_atuais',   pergunta:'Suplementação atual por iniciativa própria (nome, dose, frequência)', tipo:'textarea', obrigatorio:false },
-        { id:'q_plano_suplementacao',  pergunta:'Plano de suplementação proposto na consulta',                tipo:'textarea', obrigatorio:false },
-
-        // ══════════════════════════════════════
-        // 10. OBSERVAÇÕES E PRÓXIMOS PASSOS
-        // ══════════════════════════════════════
-        { id:'q_encaminhamento',       pergunta:'Encaminhamento recomendado',                                 tipo:'multipla',
-          opcoes:['Médico de família / clínica geral','Ginecologista','Endocrinologista','Cardiologista','Reumatologista','Dermatologista','Psicologia / Psiquiatria','Nutricionista','Fisioterapia / medicina física','Não necessário neste momento'], obrigatorio:false },
-        { id:'q_proxima_consulta',     pergunta:'Periodicidade sugerida para próxima consulta',               tipo:'escolha',
-          opcoes:['1 mês','3 meses','6 meses','1 ano','Conforme necessidade'], obrigatorio:false },
-        { id:'q_obs_finais',           pergunta:'Observações finais, notas clínicas e recomendações gerais',  tipo:'textarea', obrigatorio:false }
-    ]
-},,
-
+                { 
+                    id: 'menopausa', 
+                    nome: 'Menopausa', 
+                    cor: '#EC4899',
+                    pocDefaultIds: ['fsh', 'pressao_arterial', 'perfil_lipidico'],
+                    ativo: true
+                },
                 { 
                     id: 'diabetes', 
                     nome: 'Diabetes Mellitus', 
@@ -2476,62 +2244,41 @@ state.suplementos.forEach(sup => {
             document.getElementById('protocolosBtn').classList.add('hidden');
         }
 
-function showView(viewName) {
-    document.querySelectorAll('.view').forEach(v => {
-        v.classList.add('hidden');
-        v.style.display = 'none';
-    });
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-
-    const viewEl = document.getElementById(viewName + 'View');
-    if (viewEl) {
-        viewEl.classList.remove('hidden');
-        viewEl.style.display = 'block';
-    }
-    event.target.classList.add('active');
-
-    if (viewName === 'dashboard') updateDashboard();
-    if (viewName === 'utentes') renderUtentes();
-    if (viewName === 'consultas') renderConsultas();
-    if (viewName === 'protocolos') renderProtocolos();
-    if (viewName === 'admin') renderAdmin();
-    if (viewName === 'suplementos') renderSuplementosView();
-}
+        // Navegação
+        function showView(viewName) {
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(viewName + 'View').classList.remove('hidden');
+            event.target.classList.add('active');
+            
+            if (viewName === 'dashboard') updateDashboard();
+            if (viewName === 'utentes') renderUtentes();
+            if (viewName === 'consultas') renderConsultas();
+            if (viewName === 'protocolos') renderProtocolos();
+            if (viewName === 'admin') renderAdmin();
+if (viewName === 'suplementos') renderSuplementosView();
+        }
 
 function showAdminTab(tabName) {
     document.querySelectorAll('#adminView .tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('#adminView .tab-content').forEach(c => {
-        c.classList.remove('active');
-        c.style.display = 'none';
-    });
-
+    document.querySelectorAll('#adminView .tab-content').forEach(c => c.classList.remove('active'));
     event.target.classList.add('active');
-    const tabEl = document.getElementById(tabName + 'Tab');
-    if (tabEl) {
-        tabEl.classList.add('active');
-        tabEl.style.display = 'block';
-    }
-
+    document.getElementById(tabName + 'Tab').classList.add('active');
     if (tabName === 'tipos') renderTiposConsulta();
     if (tabName === 'testes') renderTestesPOC();
     if (tabName === 'users') renderUtilizadores();
-    if (tabName === 'suplementos') renderSuplementosAdmin();
+    if (tabName === 'suplementos') renderSuplementosAdmin(); // ← NOVO
 }
 
         function showConsultaTab(tabName) {
-    document.querySelectorAll('#novaConsultaModal .tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('#novaConsultaModal .tab-content').forEach(c => {
-        c.classList.remove('active');
-        c.style.display = 'none';
-    });
+            document.querySelectorAll('#novaConsultaModal .tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#novaConsultaModal .tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'ConsultaTab').classList.add('active');
+        }
 
-    event.target.classList.add('active');
-    const tabEl = document.getElementById(tabName + 'ConsultaTab');
-    if (tabEl) {
-        tabEl.classList.add('active');
-        tabEl.style.display = 'block';
-    }
-}
         // Dashboard
         function updateDashboard() {
             document.getElementById('totalUtentes').textContent = state.utentes.length;
@@ -2923,12 +2670,14 @@ if (consultasAnteriores.length > 0) {
 function renderQuestionario() {
     const tipoId = state.currentConsulta.tipo;
     const tipo = state.tiposConsulta.find(t => t.id === tipoId);
-    const container = document.getElementById('questionarioContent');
-
-    const mrsHtml = tipoId === 'menopausa' ? buildMRSQuestionario() : '';
-
+    
     if (!tipo || !tipo.questionario || tipo.questionario.length === 0) {
-        container.innerHTML = `<div class="info-box"><p>Sem questionário configurado.</p></div>` + mrsHtml;
+        document.getElementById('questionarioContent').innerHTML = `
+            <div class="info-box">
+                <p>Este tipo de consulta não possui questionário configurado.</p>
+                <p>Configure o questionário na seção Administração > Tipos de Consulta.</p>
+            </div>
+        `;
         return;
     }
 
@@ -2937,75 +2686,126 @@ function renderQuestionario() {
         ? new Date(state.currentConsulta._dataUltimaConsulta).toLocaleDateString('pt-PT')
         : null;
 
-    const avisoAnterior = dataAnterior
-        ? '<div class="info-box info-box-warning" style="margin-bottom:1rem;">'
-            + '<div class="info-box-title">Consulta anterior (' + dataAnterior + ')</div>'
-            + '<div class="info-box-text">Respostas anteriores destacadas a amarelo.</div>'
-          + '</div>'
-        : '';
-
-    const campos = tipo.questionario;
-    let html = '';
-
-    for (let idx = 0; idx < campos.length; idx++) {
-        const campo = campos[idx];
-        const valorAtual    = state.currentConsulta.questionario['campo_' + idx] || '';
-        const valorAnterior = respostasAnteriores['campo_' + idx] || '';
-        const usandoAnterior = !valorAtual && !!valorAnterior;
-        const val           = valorAtual || valorAnterior;
-        const estiloAnterior = usandoAnterior ? 'background:#fefce8;border-color:#f59e0b;border-width:2px;' : '';
-        const labelAnterior  = usandoAnterior
-            ? '<span style="font-size:0.72rem;color:#d97706;display:block;margin-bottom:0.25rem;">Resposta anterior — confirme</span>'
-            : '';
-
-        const fieldId = 'quest_' + idx;
-        const reqAttr = campo.obrigatorio ? ' required' : '';
+    // Aviso no topo se houver consulta anterior
+    const avisoAnterior = dataAnterior ? `
+        <div class="info-box info-box-warning" style="margin-bottom: 1rem;">
+            <div class="info-box-title">⚠️ Consulta anterior encontrada (${dataAnterior})</div>
+            <div class="info-box-text">As respostas anteriores estão destacadas a amarelo. Confirme se ainda são válidas e corrija se necessário.</div>
+        </div>
+    ` : '';
+    
+    const html = tipo.questionario.map((campo, idx) => {
         let inputHtml = '';
+        const valorAtual = state.currentConsulta.questionario[`campo_${idx}`] || '';
+        const valorAnterior = respostasAnteriores[`campo_${idx}`] || '';
 
-        if (campo.tipo === 'texto') {
-            inputHtml = labelAnterior + '<input type="text" class="form-input" id="' + fieldId + '" value="' + val + '" style="' + estiloAnterior + '" oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;"' + reqAttr + '>';
-        } else if (campo.tipo === 'numero') {
-            inputHtml = labelAnterior + '<input type="number" class="form-input" id="' + fieldId + '" value="' + val + '" style="' + estiloAnterior + '" oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;"' + reqAttr + '>';
-        } else if (campo.tipo === 'data') {
-            inputHtml = labelAnterior + '<input type="date" class="form-input" id="' + fieldId + '" value="' + val + '" style="' + estiloAnterior + '" oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;"' + reqAttr + '>';
-        } else if (campo.tipo === 'textarea') {
-            inputHtml = labelAnterior + '<textarea class="form-textarea" id="' + fieldId + '" rows="3" style="' + estiloAnterior + '" oninput="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;"' + reqAttr + '>' + val + '</textarea>';
-        } else if (campo.tipo === 'escolha') {
-            const opts = campo.opcoes.map(function(o) {
-                return '<option value="' + o + '"' + (val === o ? ' selected' : '') + '>' + o + '</option>';
-            }).join('');
-            inputHtml = labelAnterior + '<select class="form-select" id="' + fieldId + '" style="' + estiloAnterior + '" onchange="this.style=\'\';state.currentConsulta.questionario[\'campo_' + idx + '\']=this.value;"' + reqAttr + '><option value="">Selecione...</option>' + opts + '</select>';
-        } else if (campo.tipo === 'multipla') {
-            const valoresAtuais = val ? val.split('|||') : [];
-            const checks = campo.opcoes.map(function(o, oi) {
-                return '<label class="checkbox-label"><input type="checkbox" id="' + fieldId + '_' + oi + '" value="' + o + '"' + (valoresAtuais.indexOf(o) > -1 ? ' checked' : '') + '><span>' + o + '</span></label>';
-            }).join('');
-            inputHtml = labelAnterior + '<div class="checkbox-group" id="cbg_' + idx + '" style="' + (estiloAnterior ? 'padding:0.5rem;border-radius:8px;' + estiloAnterior : '') + '">' + checks + '</div>';
+        // Se não há resposta atual mas há anterior, usa a anterior com destaque
+        const usandoAnterior = !valorAtual && !!valorAnterior;
+        const valorMostrar = valorAtual || valorAnterior;
+        const estiloAnterior = usandoAnterior
+            ? 'background: #fefce8; border-color: #f59e0b; border-width: 2px;'
+            : '';
+        const labelAnterior = usandoAnterior
+            ? `<span style="font-size:0.72rem; color:#d97706; display:block; margin-bottom:0.25rem;">🕐 Resposta da consulta anterior — confirme se ainda é válida</span>`
+            : '';
+        
+        switch (campo.tipo) {
+            case 'texto':
+                inputHtml = `
+                    ${labelAnterior}
+                    <input type="text" class="form-input" id="quest_${idx}" 
+                           value="${valorMostrar}" 
+                           style="${estiloAnterior}"
+                           oninput="this.style=''; state.currentConsulta.questionario['campo_${idx}'] = this.value;"
+                           ${campo.obrigatorio ? 'required' : ''}>`;
+                break;
+            case 'numero':
+                inputHtml = `
+                    ${labelAnterior}
+                    <input type="number" class="form-input" id="quest_${idx}" 
+                           value="${valorMostrar}"
+                           style="${estiloAnterior}"
+                           oninput="this.style=''; state.currentConsulta.questionario['campo_${idx}'] = this.value;"
+                           ${campo.obrigatorio ? 'required' : ''}>`;
+                break;
+            case 'data':
+                inputHtml = `
+                    ${labelAnterior}
+                    <input type="date" class="form-input" id="quest_${idx}" 
+                           value="${valorMostrar}"
+                           style="${estiloAnterior}"
+                           oninput="this.style=''; state.currentConsulta.questionario['campo_${idx}'] = this.value;"
+                           ${campo.obrigatorio ? 'required' : ''}>`;
+                break;
+            case 'textarea':
+                inputHtml = `
+                    ${labelAnterior}
+                    <textarea class="form-textarea" id="quest_${idx}" rows="3"
+                              style="${estiloAnterior}"
+                              oninput="this.style=''; state.currentConsulta.questionario['campo_${idx}'] = this.value;"
+                              ${campo.obrigatorio ? 'required' : ''}>${valorMostrar}</textarea>`;
+                break;
+            case 'escolha':
+                inputHtml = `
+                    ${labelAnterior}
+                    <select class="form-select" id="quest_${idx}" 
+                            style="${estiloAnterior}"
+                            onchange="this.style=''; state.currentConsulta.questionario['campo_${idx}'] = this.value;"
+                            ${campo.obrigatorio ? 'required' : ''}>
+                        <option value="">Selecione...</option>
+                        ${campo.opcoes.map(opt => `<option value="${opt}" ${valorMostrar === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                    </select>`;
+                break;
+            case 'multipla':
+                const valoresAtuais = valorMostrar ? valorMostrar.split('|||') : [];
+                inputHtml = `
+                    ${labelAnterior}
+                    <div class="checkbox-group" style="${estiloAnterior ? 'padding:0.5rem; border-radius:8px; ' + estiloAnterior : ''}">
+                        ${campo.opcoes.map((opt, optIdx) => `
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="quest_${idx}_${optIdx}" 
+                                       value="${opt}" ${valoresAtuais.includes(opt) ? 'checked' : ''}>
+                                <span>${opt}</span>
+                            </label>
+                        `).join('')}
+                    </div>`;
+                break;
         }
-
-        html += '<div class="form-group"><label class="form-label" for="' + fieldId + '">' + campo.pergunta + (campo.obrigatorio ? ' *' : '') + '</label>' + inputHtml + '</div>';
-    }
-
-    // ← container.innerHTML DENTRO da função
-    container.innerHTML = avisoAnterior + html + mrsHtml;
-
-     // Listeners para multipla escolha
-    for (let idx = 0; idx < campos.length; idx++) {
-        if (campos[idx].tipo === 'multipla') {
-            campos[idx].opcoes.forEach(function(o, oi) {
-                const cb = document.getElementById('quest_' + idx + '_' + oi);
-                if (cb) {
-                    cb.addEventListener('change', function() {
-                        const all = document.querySelectorAll('[id^="quest_' + idx + '_"]');
-                        state.currentConsulta.questionario['campo_' + idx] = Array.from(all).filter(c => c.checked).map(c => c.value).join('|||');
-                        const g = document.getElementById('cbg_' + idx);
-                        if (g) g.style = '';
+        
+        return `
+            <div class="form-group">
+                <label class="form-label">
+                    ${campo.pergunta}${campo.obrigatorio ? ' *' : ''}
+                </label>
+                ${inputHtml}
+            </div>
+        `;
+    }).join('');
+}
+    
+    document.getElementById('questionarioContent').innerHTML = avisoAnterior + html;
+    
+    // Listeners para checkboxes
+    tipo.questionario.forEach((campo, idx) => {
+        if (campo.tipo === 'multipla') {
+            campo.opcoes.forEach((opt, optIdx) => {
+                const checkbox = document.getElementById(`quest_${idx}_${optIdx}`);
+                if (checkbox) {
+                    checkbox.addEventListener('change', () => {
+                        const checkboxes = document.querySelectorAll(`[id^="quest_${idx}_"]`);
+                        const valores = Array.from(checkboxes)
+                            .filter(cb => cb.checked)
+                            .map(cb => cb.value);
+                        state.currentConsulta.questionario[`campo_${idx}`] = valores.join('|||');
+                        // Remover destaque amarelo ao alterar
+                        const grupo = checkbox.closest('.checkbox-group');
+                        if (grupo) grupo.style = '';
                     });
                 }
             });
         }
-    }
-}
+    });
+
 
 function renderTestesConsulta() {
     const container = document.getElementById('testesContent');
@@ -3015,97 +2815,129 @@ function renderTestesConsulta() {
         return;
     }
 
-    container.innerHTML = state.currentConsulta.testes.map((teste, idx) => {
-        const testePOC = state.testesPOC.find(t => t.id === teste.testePOCId);
+    container.innerHTML = state.currentConsulta.testes.map(function (teste, idx) {
+        const testePOC = state.testesPOC.find(function (t) { return t.id === teste.testePOCId; });
         if (!testePOC) return '';
 
-        const camposHtml = testePOC.campos.map((campo) => {
+        // Campos principais
+        const camposHtml = testePOC.campos.map(function (campo, campoIdx) {
             const valor = teste.valores[campo.nome] || '';
-            const interpretacao = valor ? interpretarValor(parseFloat(valor), campo.min, campo.max) : null;
-            return '<div class="field-row">'
-                + '<div class="form-group">'
-                + '<label class="form-label">' + campo.nome + ' (' + campo.unidade + ')</label>'
-                + '<input type="number" class="form-input" value="' + valor + '"'
-                + ' onchange="atualizarValorTeste(' + idx + ', \'' + campo.nome + '\', this.value)"'
-                + ' placeholder="Min: ' + campo.min + ', Max: ' + campo.max + '">'
-                + '</div>'
-                + (interpretacao ? '<span class="badge badge-' + interpretacao.classe + '">' + interpretacao.texto + '</span>' : '')
+            const interpretacao = valor
+                ? interpretarValor(parseFloat(valor), campo.min, campo.max)
+                : null;
+
+            return ''
+                + '<div class="field-row">'
+                +   '<div class="form-group">'
+                +     '<label class="form-label">' + campo.nome + ' (' + campo.unidade + ')</label>'
+                +     '<input type="number"'
+                +            ' class="form-input"'
+                +            ' value="' + valor + '"'
+                +            ' onchange="atualizarValorTeste(' + idx + ', \\''
+                               + campo.nome.replace(/'/g, "\\'") + '\\', this.value)"'
+                +            ' placeholder="Min: ' + campo.min + ', Max: ' + campo.max + '">'
+                +   '</div>'
+                +   (interpretacao
+                        ? '<span class="badge badge-' + interpretacao.classe + '">' + interpretacao.texto + '</span>'
+                        : '')
                 + '</div>';
         }).join('');
 
-        let imcHtml = '';
+        // IMC (se aplicável)
+        var imcHtml = '';
         if (testePOC.id === 'imc' && teste.valores['Peso'] && teste.valores['Altura']) {
             const peso = parseFloat(teste.valores['Peso']);
             const altura = parseFloat(teste.valores['Altura']) / 100;
             const imc = (peso / (altura * altura)).toFixed(1);
-            let texto = '', emoji = '';
-            if      (imc < 18.5) { texto = 'Baixo peso';        emoji = '⚠️'; }
+
+            var texto = '';
+            var emoji = '';
+            if (imc < 18.5)      { texto = 'Baixo peso';        emoji = '⚠️'; }
             else if (imc < 25)   { texto = 'Peso normal';        emoji = '✅'; }
             else if (imc < 30)   { texto = 'Excesso de peso';    emoji = '⚠️'; }
-            else if (imc < 35)   { texto = 'Obesidade grau I';   emoji = '🔴'; }
-            else if (imc < 40)   { texto = 'Obesidade grau II';  emoji = '🔴'; }
-            else                 { texto = 'Obesidade grau III'; emoji = '🔴'; }
-            state.currentConsulta.testes[idx].valores['IMC'] = imc;
-            imcHtml = '<div class="info-box" style="margin-top:0.75rem;">'
-                + '<div class="info-box-title">🧮 IMC Calculado: <strong>' + imc + ' kg/m²</strong></div>'
-                + '<div class="info-box-text">' + emoji + ' <strong>' + texto + '</strong></div>'
-                + '</div>';
+            else if (imc < 35)   { texto = 'Obesidade grau I';   emoji = '⚠️'; }
+            else if (imc < 40)   { texto = 'Obesidade grau II';  emoji = '⚠️'; }
+            else                 { texto = 'Obesidade grau III'; emoji = '⚠️'; }
+
+            if (!teste.valores) teste.valores = {};
+            teste.valores['IMC'] = imc;
+
+            imcHtml =
+                '<div class="info-box" style="margin-top: 0.75rem;">'
+              +   '<div class="info-box-title">🧮 IMC Calculado: <strong>' + imc + ' kg/m²</strong></div>'
+              +   '<div class="info-box-text">' + emoji + ' <strong>' + texto + '</strong></div>'
+              +   '<div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--color-text-secondary);">'
+              +     '<span style="margin-right:1rem;">IMC &lt; 18.5 → Baixo peso</span>'
+              +     '<span style="margin-right:1rem;">18.5–24.9 → Normal</span>'
+              +     '<span style="margin-right:1rem;">25–29.9 → Excesso de peso</span>'
+              +     '<span>≥ 30 → Obesidade</span>'
+              +   '</div>'
+              + '</div>';
         }
 
-        return '<div class="item-card" style="margin-bottom:1rem;">'
-            + '<div class="item-header">'
-            + '<div class="item-title">' + testePOC.nome + '</div>'
-            + '<button class="icon-btn delete" onclick="removerTeste(' + idx + ')" title="Remover">🗑️</button>'
-            + '</div>'
-            + camposHtml + imcHtml
-            + '<div class="form-group" style="margin-top:0.5rem;">'
-            + '<label class="form-label">Observações</label>'
-            + '<textarea class="form-textarea" rows="2"'
-            + ' onchange="state.currentConsulta.testes[' + idx + '].observacoes=this.value">'
-            + (teste.observacoes || '') + '</textarea>'
-            + '</div></div>';
+        return ''
+          + '<div class="item-card" style="margin-bottom:1rem;">'
+          +   '<div class="item-header">'
+          +     '<div class="item-title">' + testePOC.nome + '</div>'
+          +     '<button class="icon-btn delete" onclick="removerTestePOC(' + idx + ')" title="Remover">🗑️</button>'
+          +   '</div>'
+          +   camposHtml
+          +   imcHtml
+          +   '<div class="form-group" style="margin-top:0.5rem;">'
+          +     '<label class="form-label">Observações</label>'
+          +     '<textarea class="form-textarea" rows="2"'
+          +        ' onchange="state.currentConsulta.testes[' + idx + '].observacoes = this.value">'
+          +        (teste.observacoes || '')
+          +     '</textarea>'
+          +   '</div>'
+          + '</div>';
     }).join('');
 }
 
-function interpretarValor(valor, min, max) {
-    if (valor < min) return { classe: 'error', texto: '⚠️ Abaixo do normal' };
-    if (valor > max) return { classe: 'warning', texto: '⚠️ Acima do normal' };
-    return { classe: 'success', texto: '✓ Normal' };
-}
+        function interpretarValor(valor, min, max) {
+            if (valor < min) return { classe: 'error', texto: '⚠️ Abaixo do normal' };
+            if (valor > max) return { classe: 'warning', texto: '⚠️ Acima do normal' };
+            return { classe: 'success', texto: '✓ Normal' };
+        }
 
-function atualizarValorTeste(idx, campo, valor) {
-    state.currentConsulta.testes[idx].valores[campo] = valor;
-    renderTestesConsulta();
-}
+        function atualizarValorTeste(idx, campo, valor) {
+            state.currentConsulta.testes[idx].valores[campo] = valor;
+            renderTestesConsulta();
+        }
 
-function adicionarTestePOC() {
-    const testesDisponiveis = state.testesPOC.filter(t => t.ativo);
-    const testesJaAdicionados = state.currentConsulta.testes.map(t => t.testePOCId);
-    const testesRestantes = testesDisponiveis.filter(t => !testesJaAdicionados.includes(t.id));
-    if (testesRestantes.length === 0) {
-        alert('Todos os testes disponíveis já foram adicionados');
-        return;
-    }
-    const escolha = prompt('Escolha um teste:\n\n' +
-        testesRestantes.map((t, i) => `${i + 1}. ${t.nome}`).join('\n'));
-    const idx = parseInt(escolha) - 1;
-    if (idx >= 0 && idx < testesRestantes.length) {
-        const teste = testesRestantes[idx];
-        state.currentConsulta.testes.push({
-            testePOCId: teste.id,
-            nome: teste.nome,
-            valores: {},
-            observacoes: ''
-        });
-        renderTestesConsulta();
-    }
-}
+        function adicionarTestePOC() {
+            const testesDisponiveis = state.testesPOC.filter(t => t.ativo);
+            const testesJaAdicionados = state.currentConsulta.testes.map(t => t.testePOCId);
+            const testesRestantes = testesDisponiveis.filter(t => !testesJaAdicionados.includes(t.id));
+            
+            if (testesRestantes.length === 0) {
+                alert('Todos os testes disponíveis já foram adicionados');
+                return;
+            }
+            
+            const escolha = prompt('Escolha um teste:\n\n' + 
+                testesRestantes.map((t, i) => `${i + 1}. ${t.nome}`).join('\n'));
+            
+            const idx = parseInt(escolha) - 1;
+            if (idx >= 0 && idx < testesRestantes.length) {
+                const teste = testesRestantes[idx];
+                state.currentConsulta.testes.push({
+                    testePOCId: teste.id,
+                    nome: teste.nome,
+                    valores: {},
+                    observacoes: ''
+                });
+                renderTestesConsulta();
+            }
+        }
 
-function removerTeste(idx) {
-    if (confirm('Remover este teste?')) {
-        state.currentConsulta.testes.splice(idx, 1);
-        renderTestesConsulta();
-    }
+        function removerTestePOC(idx) {
+            if (confirm('Remover este teste?')) {
+                state.currentConsulta.testes.splice(idx, 1);
+                renderTestesConsulta();
+            }
+        }
+
 }
 
 function renderGuiaConsulta() {
@@ -3371,29 +3203,6 @@ function selecionarSupCatalogo(supId, idx) {
             state.currentConsulta.observacoes = document.getElementById('guiaObservacoes').value;
             state.currentConsulta.proximaConsulta = document.getElementById('guiaProximaConsulta').value;
             
-
-                        // Capturar MRS se preenchido
-            try {
-                if (typeof getMRSScoresFromForm === 'function') {
-                    const _mrsScores = getMRSScoresFromForm();
-                    if (Object.keys(_mrsScores).length > 0 && typeof MRS_QUESTIONS !== 'undefined') {
-                        let _mrsTotal = 0;
-                        const _mrsSub = { somatic: 0, psych: 0, uro: 0 };
-                        MRS_QUESTIONS.forEach(q => {
-                            const v = _mrsScores[q.id] || 0;
-                            _mrsTotal += v;
-                            _mrsSub[q.domain] += v;
-                        });
-                        state.currentConsulta.questionario._mrs = {
-                            total: _mrsTotal,
-                            sub: _mrsSub,
-                            scores: _mrsScores
-                        };
-                    }
-                }
-            } catch (e) {
-                console.warn('MRS capture:', e);
-            }
             const consulta = {
                 id: Date.now().toString(),
                 utenteNIF: state.currentConsulta.utenteNIF,
@@ -3421,142 +3230,23 @@ function selecionarSupCatalogo(supId, idx) {
         }
 
         function abrirConsulta(id) {
-    const consulta = state.consultas.find(c => c.id === id);
-    if (!consulta) return;
-
-    const utente = state.utentes.find(u => u.nif === consulta.utenteNIF);
-    const tipo   = state.tiposConsulta.find(t => t.id === consulta.tipo);
-    const data   = new Date(consulta.data).toLocaleString('pt-PT');
-
-    let secoes = '';
-
-    // Questionário
-    const camposN = (tipo && tipo.questionario) ? tipo.questionario : [];
-    const qRows = camposN.map((c, i) => {
-        const v = consulta.questionario && consulta.questionario['campo_' + i];
-        return v
-            ? '<tr><td style="padding:5px 8px;font-weight:500;color:#374151;width:45%">' + c.pergunta + '</td>'
-                + '<td style="padding:5px 8px;">' + v + '</td></tr>'
-            : '';
-    }).join('');
-    if (qRows) {
-        secoes += '<h4 style="margin:14px 0 6px;color:#047857">📋 Questionário Clínico</h4>'
-            + '<table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #e5e7eb;">'
-            + qRows + '</table>';
-    }
-
-    // MRS
-    const mrs = consulta.questionario && consulta.questionario._mrs;
-    if (mrs) {
-        const sevStyle = mrs.total <= 4  ? '#d1fae5;color:#065f46'
-                       : mrs.total <= 8  ? '#fef9c3;color:#854d0e'
-                       : mrs.total <= 15 ? '#ffedd5;color:#9a3412'
-                                          : '#fee2e2;color:#991b1b';
-        const sevLabel = mrs.total <= 4  ? 'Sem/Mínima'
-                       : mrs.total <= 8  ? 'Ligeira'
-                       : mrs.total <= 15 ? 'Moderada'
-                                          : 'Grave';
-
-        secoes += '<h4 style="margin:14px 0 6px;color:#9d174d">📊 MRS — Escala de Menopausa</h4>'
-            + '<div style="background:#fdf4f9;padding:12px;border-radius:8px;border:1px solid #f9a8d4;">'
-            + '<strong style="font-size:18px;color:#9d174d">Total: ' + mrs.total + '/44</strong> &nbsp;'
-            + '<span style="background:' + sevStyle + ';padding:3px 12px;border-radius:999px;font-size:12px;">' + sevLabel + '</span>'
-            + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;font-size:12px;">'
-            + '<div>Somático: <strong>' + ((mrs.sub && mrs.sub.somatic) || 0) + '</strong>/20</div>'
-            + '<div>Psicológico: <strong>' + ((mrs.sub && mrs.sub.psych)   || 0) + '</strong>/16</div>'
-            + '<div>Urogenital: <strong>'  + ((mrs.sub && mrs.sub.uro)     || 0) + '</strong>/12</div>'
-            + '</div></div>';
-    }
-
-    // Testes
-    if (consulta.testes && consulta.testes.length > 0) {
-        const tRows = consulta.testes.map(t => {
-            const vals = t.valores
-                ? Object.entries(t.valores)
-                    .filter(([k, v]) => v)
-                    .map(([k, v]) => '<span style="background:#f3f4f6;padding:2px 8px;border-radius:4px;font-size:11px;">'
-                        + k + ': <strong>' + v + '</strong></span>')
-                    .join(' ')
-                : '';
-            return '<li style="margin-bottom:6px"><strong>' + t.nome + '</strong> ' + vals + '</li>';
-        }).join('');
-        secoes += '<h4 style="margin:14px 0 6px;color:#047857">🧪 Testes POC</h4>'
-            + '<ul style="font-size:13px;padding-left:18px;">' + tRows + '</ul>';
-    }
-
-    // Suplementos
-    if (consulta.guia && consulta.guia.suplementos && consulta.guia.suplementos.length > 0) {
-        const sRows = consulta.guia.suplementos.map(s =>
-            '<li style="margin-bottom:4px"><strong>' + s.nome + '</strong>'
-            + (s.posologia ? ' · ' + s.posologia : '')
-            + (s.duracao   ? ' · ' + s.duracao   : '')
-            + '</li>'
-        ).join('');
-        secoes += '<h4 style="margin:14px 0 6px;color:#047857">💊 Suplementação</h4>'
-            + '<ul style="font-size:13px;padding-left:18px;">' + sRows + '</ul>';
-    }
-
-    // Medidas
-    if (consulta.guia && consulta.guia.medidas && consulta.guia.medidas.length > 0) {
-        secoes += '<h4 style="margin:14px 0 6px;color:#047857">🥗 Medidas Não-Farmacológicas</h4>'
-            + '<ul style="font-size:13px;padding-left:18px;">'
-            + consulta.guia.medidas.map(m => '<li>' + m + '</li>').join('')
-            + '</ul>';
-    }
-
-    // Exames
-    if (consulta.guia && consulta.guia.exames && consulta.guia.exames.length > 0) {
-        secoes += '<h4 style="margin:14px 0 6px;color:#047857">🔬 Exames Sugeridos</h4>'
-            + '<ul style="font-size:13px;padding-left:18px;">'
-            + consulta.guia.exames.map(e => '<li>' + (e.nome || e) + '</li>').join('')
-            + '</ul>';
-    }
-
-    if (consulta.guia && consulta.guia.observacoes) {
-        secoes += '<h4 style="margin:14px 0 6px;color:#047857">📝 Observações</h4>'
-            + '<p style="font-size:13px;">' + consulta.guia.observacoes + '</p>';
-    }
-
-    if (consulta.guia && consulta.guia.proximaConsulta) {
-        secoes += '<p style="margin-top:12px;font-size:13px;"><strong>📅 Próxima consulta:</strong> '
-            + new Date(consulta.guia.proximaConsulta).toLocaleDateString('pt-PT')
-            + '</p>';
-    }
-
-    document.getElementById('fichaUtenteContent').innerHTML =
-        '<div style="padding:8px;">'
-        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'
-        + '<div>'
-        + '<h3 style="margin:0;font-size:16px;">' + (utente ? utente.nome : 'Utente') + '</h3>'
-        + '<p style="margin:3px 0;color:#6b7280;font-size:13px;">'
-        + (tipo ? tipo.nome : consulta.tipo) + ' · ' + data + ' · ' + consulta.farmaceutico
-        + '</p>'
-        + '</div>'
-        + '<button class="btn btn-primary btn-small" onclick="gerarGuiaPDF(\'' + consulta.id + '\')">⬇️ Exportar PDF</button>'
-        + '</div>'
-        + '<hr style="margin:0 0 12px;">'
-        + (secoes || '<p style="color:#6b7280;font-size:13px;">Sem dados registados.</p>')
-        + '</div>';
-
-    document.getElementById('fichaUtenteModal').classList.add('active');
-}
+            const consulta = state.consultas.find(c => c.id === id);
+            if (!consulta) return;
+            
+            alert('Visualização completa da consulta será implementada com impressão do guia terapêutico.');
+        }
 
         // Admin
-      function renderAdmin() {
-    if (state.currentUser.role !== 'admin') return;
-    
-    document.getElementById('farmNome').value = state.config.nome;
-    document.getElementById('farmDiretora').value = state.config.diretora;
-    document.getElementById('farmMorada').value = state.config.morada;
-    document.getElementById('farmTelefone').value = state.config.telefone;
-    document.getElementById('farmEmail').value = state.config.email;
-    document.getElementById('farmWebsite').value = state.config.website;
-
-    renderTiposConsulta();
-    renderTestesPOC();
-    renderUtilizadores();
-    renderSuplementosAdmin();
-}
+        function renderAdmin() {
+            if (state.currentUser.role !== 'admin') return;
+            
+            document.getElementById('farmNome').value = state.config.nome;
+            document.getElementById('farmDiretora').value = state.config.diretora;
+            document.getElementById('farmMorada').value = state.config.morada;
+            document.getElementById('farmTelefone').value = state.config.telefone;
+            document.getElementById('farmEmail').value = state.config.email;
+            document.getElementById('farmWebsite').value = state.config.website;
+        }
 
         function salvarDadosFarmacia() {
             state.config.nome = document.getElementById('farmNome').value;
@@ -4501,7 +4191,7 @@ function apagarUtilizador(operador) {
         if (state.utentes.length === 0 && state.consultas.length === 0) {
             saveData();
         }
-    function renderSuplementosAdmin() {
+function renderSuplementosAdmin() {
     const tbody = document.getElementById('suplementosTableBody');
     if (!state.suplementos || state.suplementos.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="text-center text-secondary">Nenhum suplemento configurado</td></tr>';
@@ -4516,7 +4206,6 @@ function apagarUtilizador(operador) {
             <td>
                 <button class="btn btn-secondary btn-small" onclick="editarSuplemento('${s.id}')">Editar</button>
                 <button class="btn btn-danger btn-small" onclick="toggleSuplementoAtivo('${s.id}')">${s.ativo ? 'Desativar' : 'Ativar'}</button>
-                <button class="btn btn-danger btn-small" onclick="apagarSuplemento('${s.id}')">🗑️ Apagar</button>
             </td>
         </tr>
     `).join('');
@@ -4587,14 +4276,7 @@ function toggleSuplementoAtivo(id) {
     saveData();
     renderSuplementosAdmin();
 }
-function apagarSuplemento(id) {
-    const sup = state.suplementos.find(s => s.id === id);
-    if (!sup) return;
-    if (!confirm(`Apagar "${sup.nome}" permanentemente?\nEsta ação não pode ser desfeita.`)) return;
-    state.suplementos = state.suplementos.filter(s => s.id !== id);
-    saveData();
-    renderSuplementosAdmin();
-}
+
 function renderSuplementosView() {
     renderSuplementosTabela('suplementosViewTableBody', document.getElementById('searchSuplemento')?.value || '');
 }
@@ -4687,253 +4369,6 @@ function selecionarUtenteConsulta(nif) {
 
     carregarDadosUtente();
 }
-    
-function getMRSScoresFromForm() {
-    var scores = {};
-    if (typeof MRS_QUESTIONS === 'undefined') return scores;
-    MRS_QUESTIONS.forEach(function(q){
-        var el = document.querySelector('input[name="mrs_'+q.id+'"]:checked');
-        if (el) scores[q.id] = parseInt(el.value);
-    });
-    return scores;
-}
-
-
-// ============================================================
-// GERAÇÃO DE PDF — jsPDF
-// ============================================================
-function gerarGuiaPDF(consultaId) {
-    var consulta = state.consultas.find(function(c){return c.id===consultaId;});
-    if (!consulta) { alert('Consulta não encontrada.'); return; }
-    var utente = state.utentes.find(function(u){return u.nif===consulta.utenteNIF;});
-    var tipo   = state.tiposConsulta.find(function(t){return t.id===consulta.tipo;});
-    if (!window.jspdf) { alert('jsPDF não carregado. Verifique a ligação à internet.'); return; }
-    var jsPDF = window.jspdf.jsPDF;
-    var doc = new jsPDF({unit:'mm', format:'a4'});
-    var W = doc.internal.pageSize.getWidth();
-    var y = 0;
-
-    // Header
-    doc.setFillColor(16,185,129); doc.rect(0,0,W,30,'F');
-    doc.setTextColor(255,255,255);
-    doc.setFont('helvetica','bold'); doc.setFontSize(14);
-    doc.text((state.config&&state.config.nome)||'Farmácia da Liga', 14, 13);
-    doc.setFont('helvetica','normal'); doc.setFontSize(10);
-    doc.text('Guia Terapêutico · '+((tipo&&tipo.nome)||consulta.tipo), 14, 21);
-    doc.text(new Date(consulta.data).toLocaleDateString('pt-PT'), W-14, 21, {align:'right'});
-    doc.setTextColor(30,30,30);
-    y = 38;
-
-    function checkPage() { if(y>278){doc.addPage();y=16;} }
-    function addText(txt, bold, x, sz) {
-        checkPage();
-        x = x||14; sz = sz||10; bold = bold||false;
-        doc.setFontSize(sz); doc.setFont('helvetica', bold?'bold':'normal');
-        var lines = doc.splitTextToSize(String(txt), W-x-10);
-        lines.forEach(function(l){ checkPage(); doc.text(l,x,y); y+=5.5; });
-    }
-    function addSection(title, rgb) {
-        checkPage();
-        rgb = rgb||[4,120,87];
-        doc.setFillColor(209,250,229); doc.rect(12,y-3,W-24,8,'F');
-        doc.setFont('helvetica','bold'); doc.setFontSize(10);
-        doc.setTextColor(rgb[0],rgb[1],rgb[2]);
-        doc.text(title,14,y+2);
-        doc.setTextColor(30,30,30); doc.setFont('helvetica','normal');
-        y += 10;
-    }
-
-    addSection('Identificação do Utente');
-    addText('Utente: '+((utente&&utente.nome)||'N/D'));
-    if (utente&&utente.dataNascimento) addText('Data Nasc.: '+new Date(utente.dataNascimento).toLocaleDateString('pt-PT'));
-    if (utente&&utente.nif) addText('NIF: '+utente.nif);
-    addText('Farmacêutico: '+consulta.farmaceutico);
-    addText('Data Consulta: '+new Date(consulta.data).toLocaleString('pt-PT'));
-    y += 3;
-
-    // Questionário normal
-    var camposN = (tipo&&tipo.questionario)||[];
-    var qData = camposN.map(function(c,i){return {label:c.pergunta, val:consulta.questionario&&consulta.questionario['campo_'+i]};}).filter(function(r){return r.val;});
-    if (qData.length > 0) {
-        addSection('Questionário Clínico');
-        qData.forEach(function(r){ addText('• '+r.label+': '+r.val, false, 18, 9); });
-        y += 2;
-    }
-
-    // MRS
-    var mrs = consulta.questionario&&consulta.questionario._mrs;
-    if (mrs) {
-        var sl = mrs.total<=4?'Sem/Mínima':mrs.total<=8?'Ligeira':mrs.total<=15?'Moderada':'Grave';
-        addSection('Escala MRS — Menopausa', [157,23,77]);
-        addText('Score Total: '+mrs.total+'/44  |  Classificação: '+sl, true);
-        addText('Somático: '+((mrs.sub&&mrs.sub.somatic)||0)+'/20  |  Psicológico: '+((mrs.sub&&mrs.sub.psych)||0)+'/16  |  Urogenital: '+((mrs.sub&&mrs.sub.uro)||0)+'/12', false, 18, 9);
-        if (mrs.scores && typeof MRS_QUESTIONS !== 'undefined') {
-            MRS_QUESTIONS.forEach(function(q,i){
-                addText((i+1)+'. '+q.label+' — '+(mrs.scores[q.id]||0)+'/4', false, 20, 8.5);
-            });
-        }
-        y += 2;
-    }
-
-    // Testes POC
-    if (consulta.testes&&consulta.testes.length>0) {
-        addSection('Testes POC');
-        consulta.testes.forEach(function(t){
-            addText('• '+t.nome, true, 18);
-            if (t.valores) Object.entries(t.valores).filter(function(e){return e[1];}).forEach(function(e){ addText('  '+e[0]+': '+e[1], false, 24, 9); });
-        });
-        y += 2;
-    }
-
-    // Suplementos
-    if (consulta.guia&&consulta.guia.suplementos&&consulta.guia.suplementos.length>0) {
-        addSection('Suplementação Recomendada');
-        consulta.guia.suplementos.forEach(function(s){
-            addText('• '+s.nome, true, 18);
-            if (s.posologia) addText('  Posologia: '+s.posologia, false, 24, 9);
-            if (s.duracao)   addText('  Duração: '+s.duracao,   false, 24, 9);
-            if (s.indicacao) addText('  Indicação: '+s.indicacao, false, 24, 9);
-        });
-        y += 2;
-    }
-
-    // Medidas
-    if (consulta.guia&&consulta.guia.medidas&&consulta.guia.medidas.length>0) {
-        addSection('Medidas Não-Farmacológicas');
-        consulta.guia.medidas.forEach(function(m){ addText('• '+m, false, 18, 9); });
-        y += 2;
-    }
-
-    // Exames
-    if (consulta.guia&&consulta.guia.exames&&consulta.guia.exames.length>0) {
-        addSection('Exames Sugeridos');
-        consulta.guia.exames.forEach(function(e){ addText('• '+(e.nome||e), false, 18, 9); });
-        y += 2;
-    }
-
-    if (consulta.guia&&consulta.guia.observacoes) {
-        addSection('Observações');
-        addText(consulta.guia.observacoes);
-        y += 2;
-    }
-    if (consulta.guia&&consulta.guia.proximaConsulta) {
-        addText('Próxima consulta: '+new Date(consulta.guia.proximaConsulta).toLocaleDateString('pt-PT'), true);
-    }
-
-    // Footer
-    var pages = doc.internal.getNumberOfPages();
-    for (var i=1; i<=pages; i++) {
-        doc.setPage(i);
-        doc.setFontSize(7.5); doc.setTextColor(150);
-        doc.text(((state.config&&state.config.nome)||'Farmácia da Liga')+' · '+((state.config&&state.config.morada)||'Vila Nova de Gaia')+' · Pág '+i+'/'+pages, W/2, 292, {align:'center'});
-        doc.setTextColor(30,30,30);
-    }
-
-    var nomeFile = ((utente&&utente.nome)||'utente').replace(/\s+/g,'_');
-    var dataFile = new Date(consulta.data).toLocaleDateString('pt-PT').replace(/\//g,'-');
-    doc.save('Guia_'+nomeFile+'_'+consulta.tipo+'_'+dataFile+'.pdf');
-}
-// MRS — Menopause Rating Scale
-var MRS_QUESTIONS = [
-    { id:'mrs1',  label:'Ondas de calor / suores noturnos',                             domain:'somatic' },
-    { id:'mrs2',  label:'Desconforto cardíaco (palpitações, ritmo irregular)',          domain:'somatic' },
-    { id:'mrs3',  label:'Perturbações do sono (adormecer, manter, acordar cedo)',       domain:'somatic' },
-    { id:'mrs4',  label:'Dores articulares e/ou musculares',                            domain:'somatic' },
-    { id:'mrs5',  label:'Humor deprimido (tristeza, choro, desmotivação)',              domain:'psych'   },
-    { id:'mrs6',  label:'Irritabilidade (nervosismo, tensão, agressividade)',           domain:'psych'   },
-    { id:'mrs7',  label:'Ansiedade (inquietação, ataques de pânico)',                   domain:'psych'   },
-    { id:'mrs8',  label:'Exaustão física e mental (fadiga, memória, concentração)',     domain:'psych'   },
-    { id:'mrs9',  label:'Problemas sexuais (líbido, atividade sexual)',                 domain:'uro'     },
-    { id:'mrs10', label:'Problemas urinários (urgência, perdas, infeções recorrentes)', domain:'uro'     },
-    { id:'mrs11', label:'Secura vaginal / desconforto nas relações sexuais',            domain:'uro'     }
-];
-
-function buildMRSQuestionario() {
-    var rows = MRS_QUESTIONS.map(function(q, i) {
-        var cells = [0,1,2,3,4].map(function(v) {
-            return '<td style="text-align:center;padding:6px;width:52px;">'
-                + '<input type="radio" name="mrs_' + q.id + '" value="' + v + '"'
-                + ' style="width:17px;height:17px;accent-color:#9d174d;cursor:pointer;"'
-                + ' onchange="calcMRSAuto()"></td>';
-        }).join('');
-        return '<tr style="border-bottom:1px solid #fce7f3;">'
-            + '<td style="padding:7px 6px;font-size:12px;vertical-align:middle;">' + (i+1) + '. ' + q.label + '</td>'
-            + cells + '</tr>';
-    }).join('');
-    var headers = [0,1,2,3,4].map(function(v) {
-        return '<th style="text-align:center;padding:8px;background:#fce7f3;color:#9d174d;border-bottom:2px solid #f9a8d4;width:52px;">' + v + '</th>';
-    }).join('');
-    return '<div style="background:#fdf4f9;border:1px solid #f9a8d4;border-radius:10px;padding:16px;margin-top:16px;">'
-        + '<h4 style="color:#9d174d;margin-bottom:6px;">📊 Escala MRS (Menopause Rating Scale)</h4>'
-        + '<p style="font-size:11px;color:#6b7280;margin-bottom:10px;">0 = Sem sintomas · 1 = Ligeiro · 2 = Moderado · 3 = Grave · 4 = Muito grave</p>'
-        + '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">'
-        + '<thead><tr>'
-        + '<th style="text-align:left;padding:8px;background:#fce7f3;color:#9d174d;border-bottom:2px solid #f9a8d4;">Sintoma</th>'
-        + headers + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
-        + '<div id="mrsScoreBox" style="display:none;margin-top:12px;padding:12px;background:#fff;border-radius:8px;border:1px solid #f9a8d4;">'
-        +   '<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">'
-        +     '<div><span style="font-size:11px;color:#6b7280">Score Total</span><br>'
-        +       '<strong style="font-size:24px;color:#9d174d" id="mrsScoreTotal">0</strong>'
-        +       '<span style="font-size:11px;color:#6b7280">/44</span></div>'
-        +     '<div id="mrsSeverityBadge"></div>'
-        +     '<div style="flex:1;font-size:12px;color:#6b7280;" id="mrsRecomBox"></div>'
-        +   '</div>'
-        +   '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;font-size:12px;" id="mrsSubScores"></div>'
-        + '</div>'
-        + '<div id="mrsAlertas"></div>'
-        + '</div>';
-}
-
-function calcMRSAuto() {
-    var total = 0;
-    var sub = { somatic:0, psych:0, uro:0 };
-    var scores = {};
-    MRS_QUESTIONS.forEach(function(q) {
-        var el = document.querySelector('input[name="mrs_' + q.id + '"]:checked');
-        if (el) {
-            var v = parseInt(el.value);
-            scores[q.id] = v;
-            total += v;
-            sub[q.domain] += v;
-        }
-    });
-    if (Object.keys(scores).length === 0) return;
-    if (state.currentConsulta) {
-        state.currentConsulta._mrsDraft = { total: total, sub: sub, scores: scores };
-    }
-    var sevStyle, sevLabel, recom;
-    if      (total <= 4)  { sevStyle = 'background:#d1fae5;color:#065f46'; sevLabel = 'Sem / Mínima sintomatologia'; recom = 'Medidas preventivas de estilo de vida.'; }
-    else if (total <= 8)  { sevStyle = 'background:#fef9c3;color:#854d0e'; sevLabel = 'Sintomatologia ligeira';      recom = 'Suplementação preventiva. Reavaliação em 3 meses.'; }
-    else if (total <= 15) { sevStyle = 'background:#ffedd5;color:#9a3412'; sevLabel = 'Sintomatologia moderada';     recom = 'Suplementação ativa. Considerar referenciação médica.'; }
-    else                  { sevStyle = 'background:#fee2e2;color:#991b1b'; sevLabel = 'Sintomatologia grave';         recom = 'Referenciação médica urgente.'; }
-    var box = document.getElementById('mrsScoreBox');
-    if (!box) return;
-    box.style.display = 'block';
-    document.getElementById('mrsScoreTotal').textContent = total;
-    var badge = document.getElementById('mrsSeverityBadge');
-    badge.setAttribute('style', 'padding:5px 14px;border-radius:999px;font-size:12px;font-weight:700;' + sevStyle);
-    badge.textContent = sevLabel;
-    document.getElementById('mrsRecomBox').textContent = recom;
-    document.getElementById('mrsSubScores').innerHTML =
-        '<div style="background:#fdf4f9;padding:6px 10px;border-radius:6px;">Somático: <strong>' + sub.somatic + '</strong>/20</div>'
-      + '<div style="background:#fdf4f9;padding:6px 10px;border-radius:6px;">Psicológico: <strong>' + sub.psych + '</strong>/16</div>'
-      + '<div style="background:#fdf4f9;padding:6px 10px;border-radius:6px;">Urogenital: <strong>' + sub.uro + '</strong>/12</div>';
-    var utente = state.utentes && state.utentes.find(function(u) { return u.nif === (state.currentConsulta && state.currentConsulta.utenteNIF); });
-    var alertas = [];
-    if (utente) {
-        var pat = ((utente.patologias || []).join(' ')).toLowerCase();
-        var med = ((utente.medicacao  || []).join(' ')).toLowerCase();
-        var al  = ((utente.alergias   || []).join(' ')).toLowerCase();
-        if (pat.includes('mama') || pat.includes('cancro') || pat.includes('neoplasia'))
-            alertas.push('Antecedente neoplásico — evitar isoflavonas / fitoestrogénios sem aval médico.');
-        if (pat.includes('trombose') || pat.includes('avc') || pat.includes('embolia'))
-            alertas.push('Tromboembolismo/AVC — precaução com Ómega-3 em dose alta e Vitamina E.');
-        if (pat.includes('varfarina') || pat.includes('anticoagulante') || pat.includes('rivaroxabano'))
-            alertas.push('Anticoagulante em curso — Ómega-3 com cautela; isoflavonas com precaução.');
-        if (al.includes('soja'))
-            alertas.push('Alergia à soja — verificar origem das isoflavonas.');
-    }
-
-</script>
+    </script>
 </body>
 </html>
