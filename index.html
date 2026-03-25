@@ -1755,14 +1755,16 @@ suplementos: [],
             state.consultas.push({ id: doc.id, ...doc.data() });
         });
         
-        // Processar tipos de consulta
-        state.tiposConsulta = [];
-        tiposSnap.forEach(doc => {
-            state.tiposConsulta.push({ id: doc.id, ...doc.data() });
-        });
-        if (state.tiposConsulta.length === 0) {
-            state.tiposConsulta = inicializarTiposConsulta();
-        }
+// Processar tipos de consulta
+state.tiposConsulta = [];
+tiposSnap.forEach(doc => state.tiposConsulta.push({ id: doc.id, ...doc.data() }));
+
+// FORÇAR MENOPAUSA com questionário BASE sempre
+const menopausaExists = state.tiposConsulta.some(t => t.id === 'menopausa');
+if (!menopausaExists) {
+    const tiposBase = inicializarTiposConsulta();
+    state.tiposConsulta = [...state.tiposConsulta, ...tiposBase.filter(t => t.id === 'menopausa')];
+}
         
         // Processar testes POC
         state.testesPOC = [];
@@ -1981,31 +1983,42 @@ state.suplementos.forEach(sup => {
             });
         }
 
-        function loadFromLocalStorage() {
-            const saved = localStorage.getItem('farmaciaConsultasData');
-            if (saved) {
-                try {
-                    const data = JSON.parse(saved);
-                    state.utentes = data.utentes || [];
-                    state.consultas = data.consultas || [];
-                    state.tiposConsulta = data.tiposConsulta || inicializarTiposConsulta();
-                    state.testesPOC = data.testesPOC || inicializarTestesPOC();
-            state.suplementos = data.suplementos || []; 
-                    state.utilizadores = data.utilizadores || state.utilizadores;
-                    state.config = data.config || state.config;
-                    state.protocolos = data.protocolos || [];
-                    state.lastSync = data.lastSync || null;
-                    state.syncStatus = 'local';
-                    updateSyncIndicator();
-                    console.log('📁 Dados carregados do localStorage');
-                } catch(e) {
-                    console.error('Erro ao carregar dados:', e);
-                    inicializarDadosDemo();
+function loadFromLocalStorage() {
+    const saved = localStorage.getItem('farmaciaConsultasData');
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            state.utentes = data.utentes || [];
+            state.consultas = data.consultas || [];
+            state.tiposConsulta = data.tiposConsulta || [];
+            state.testesPOC = data.testesPOC || [];
+            state.suplementos = data.suplementos || [];
+            state.utilizadores = data.utilizadores || [];
+            state.config = data.config || {};
+            state.protocolos = data.protocolos || [];
+            state.lastSync = data.lastSync || null;
+            
+            // FORÇAR MENOPAUSA com questionário BASE sempre (igual ao loadFromServer)
+            const menopausaExists = state.tiposConsulta.some(t => t.id === 'menopausa');
+            if (!menopausaExists) {
+                const tiposBase = inicializarTiposConsulta();
+                const menopausaBase = tiposBase.find(t => t.id === 'menopausa');
+                if (menopausaBase) {
+                    state.tiposConsulta.push(menopausaBase);
                 }
-            } else {
-                inicializarDadosDemo();
             }
+            
+            state.syncStatus = 'local';
+            updateSyncIndicator();
+            console.log('Dados carregados do localStorage');
+        } catch (e) {
+            console.error('Erro ao carregar dados:', e);
+            inicializarDadosDemo();
         }
+    } else {
+        inicializarDadosDemo();
+    }
+}
 
         function saveData() {
             // Sempre tentar guardar no Firebase
@@ -2078,16 +2091,15 @@ state.suplementos.forEach(sup => {
             }
         }
 
-        function inicializarTiposConsulta() {
-            return [
-               {
-    id: 'menopausa',
-    nome: 'Menopausa',
-    cor: '#EC4899',
-    pocDefaultIds: ['fsh', 'pressao_arterial', 'perfil_lipidico'],
-    ativo: true,
-    questionario: [
-
+function inicializarTiposConsulta() {
+    return [
+        {
+            id: 'menopausa',
+            nome: 'Menopausa',
+            cor: '#EC4899',
+            pocDefaultIds: ['fsh', 'pressaoarterial', 'perfillipidico'],
+            ativo: true,
+            questionario: [
         // ══════════════════════════════════════
         // 1. IDENTIFICAÇÃO E ANAMNESE GERAL
         // ══════════════════════════════════════
