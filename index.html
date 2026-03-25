@@ -4733,7 +4733,7 @@ function gerarGuiaPDF(consultaId) {
     doc.save('Guia_'+nomeFile+'_'+consulta.tipo+'_'+dataFile+'.pdf');
 }
 // MRS — Menopause Rating Scale
-const MRS_QUESTIONS = [
+var MRS_QUESTIONS = [
     { id:'mrs1',  label:'Ondas de calor / suores noturnos',                              domain:'somatic' },
     { id:'mrs2',  label:'Desconforto cardíaco (palpitações, ritmo irregular)',           domain:'somatic' },
     { id:'mrs3',  label:'Perturbações do sono (adormecer, manter, acordar cedo)',        domain:'somatic' },
