@@ -2247,19 +2247,39 @@ state.suplementos.forEach(sup => {
 
         // Navegação
         function showView(viewName) {
-            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            
-            document.getElementById(viewName + 'View').classList.remove('hidden');
-            event.target.classList.add('active');
-            
-            if (viewName === 'dashboard') updateDashboard();
-            if (viewName === 'utentes') renderUtentes();
-            if (viewName === 'consultas') renderConsultas();
-            if (viewName === 'protocolos') renderProtocolos();
-            if (viewName === 'admin') renderAdmin();
-if (viewName === 'suplementos') renderSuplementosView();
-        }
+    // Esconder todas as views
+    document.querySelectorAll('.view').forEach(function(v) {
+        v.classList.add('hidden');
+        v.style.display = 'none';
+    });
+    
+    // Remover active dos botões nav
+    document.querySelectorAll('.nav-btn').forEach(function(b) {
+        b.classList.remove('active');
+    });
+    
+    // Mostrar a view pedida
+    var viewEl = document.getElementById(viewName + 'View');
+    if (viewEl) {
+        viewEl.classList.remove('hidden');
+        viewEl.style.display = 'block';
+    }
+    
+    // Ativar botão
+    event.target.classList.add('active');
+    
+    // Renderizar conteúdo específico
+    if (viewName === 'dashboard') updateDashboard();
+    if (viewName === 'utentes') renderUtentes();
+    if (viewName === 'consultas') renderConsultas();
+    if (viewName === 'protocolos') renderProtocolos();
+    if (viewName === 'admin') {
+        renderAdmin();
+    }
+    if (viewName === 'suplementos') {
+        renderSuplementosView();
+    }
+}
 
 function showAdminTab(tabName) {
     document.querySelectorAll('#adminView .tab').forEach(t => t.classList.remove('active'));
@@ -4224,13 +4244,23 @@ function toggleSuplementoAtivo(id) {
 }
 
 function renderSuplementosView() {
-    document.querySelectorAll('.adminView .tab-content').forEach(c => {
+   // Esconder todas as tabs do admin
+    document.querySelectorAll('.adminView .tab-content').forEach(function(c) {
         c.classList.remove('active');
         c.style.display = 'none';
     });
-    document.querySelectorAll('.adminView .tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.adminView .tab').forEach(function(t) {
+        t.classList.remove('active');
+    });
     
-    showAdminTab('suplementos');
+    // Mostrar só suplementos
+    var suplementosTab = document.getElementById('suplementosTab');
+    if (suplementosTab) {
+        suplementosTab.classList.add('active');
+        suplementosTab.style.display = 'block';
+    }
+    
+    renderSuplementosTabela();  // ou a função que renderiza a tabela dos suplementos
 }
 
 function filterSuplemetos() {
