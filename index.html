@@ -3002,32 +3002,7 @@ function renderQuestionario() {
                         if (g) g.style = '';
                     });
                 }
-            });
-        }
-    }
-} // ← fecho correto da função
 
-    // Listeners para multipla escolha
-    for (let idx = 0; idx < campos.length; idx++) {
-        if (campos[idx].tipo === 'multipla') {
-            campos[idx].opcoes.forEach(function (o, oi) {
-                const cb = document.getElementById('quest_' + idx + '_' + oi);
-                if (cb) {
-                    cb.addEventListener('change', function () {
-                        const all = document.querySelectorAll('[id^="quest_' + idx + '_"]');
-                        state.currentConsulta.questionario['campo_' + idx] =
-                            Array.from(all)
-                                .filter(function (c) { return c.checked; })
-                                .map(function (c) { return c.value; })
-                                .join('|||');
-                        const g = document.getElementById('cbg_' + idx);
-                        if (g) g.style = '';
-                    });
-                }
-            });
-        }
-    }
-}
  function renderTestesConsulta() {
     const container = document.getElementById('testesContent');
 
