@@ -2989,7 +2989,7 @@ function renderQuestionario() {
     // ← container.innerHTML DENTRO da função
     container.innerHTML = avisoAnterior + html + mrsHtml;
 
-    // Listeners para multipla escolha — DENTRO da função
+     // Listeners para multipla escolha
     for (let idx = 0; idx < campos.length; idx++) {
         if (campos[idx].tipo === 'multipla') {
             campos[idx].opcoes.forEach(function(o, oi) {
@@ -3002,12 +3002,12 @@ function renderQuestionario() {
                         if (g) g.style = '';
                     });
                 }
-            });        // ← fecha forEach das opções
-        }              // ← fecha if multipla
-    }                // ← fecha forEach dos campos
-}                      // ← fecha renderQuestionario
+            });
+        }
+    }
+}
 
- function renderTestesConsulta() {
+function renderTestesConsulta() {
     const container = document.getElementById('testesContent');
 
     if (!state.currentConsulta.testes || state.currentConsulta.testes.length === 0) {
