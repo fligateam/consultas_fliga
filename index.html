@@ -3000,12 +3000,13 @@ function renderQuestionario() {
                         state.currentConsulta.questionario['campo_' + idx] = Array.from(all).filter(c => c.checked).map(c => c.value).join('|||');
                         const g = document.getElementById('cbg_' + idx);
                         if (g) g.style = '';
-                              });
+                    });
                 }
             });        // ← fecha forEach das opções
         }              // ← fecha if multipla
     });                // ← fecha forEach dos campos
-} 
+}                      // ← fecha renderQuestionario
+
  function renderTestesConsulta() {
     const container = document.getElementById('testesContent');
 
