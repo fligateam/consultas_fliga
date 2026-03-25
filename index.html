@@ -4529,6 +4529,7 @@ function apagarUtilizador(operador) {
             saveData();
         }
 function renderSuplementosAdmin() {
+    function renderSuplementosAdmin() {
     const tbody = document.getElementById('suplementosTableBody');
     if (!state.suplementos || state.suplementos.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="text-center text-secondary">Nenhum suplemento configurado</td></tr>';
@@ -4543,6 +4544,7 @@ function renderSuplementosAdmin() {
             <td>
                 <button class="btn btn-secondary btn-small" onclick="editarSuplemento('${s.id}')">Editar</button>
                 <button class="btn btn-danger btn-small" onclick="toggleSuplementoAtivo('${s.id}')">${s.ativo ? 'Desativar' : 'Ativar'}</button>
+                <button class="btn btn-danger btn-small" onclick="apagarSuplemento('${s.id}')">🗑️ Apagar</button>
             </td>
         </tr>
     `).join('');
@@ -4613,7 +4615,14 @@ function toggleSuplementoAtivo(id) {
     saveData();
     renderSuplementosAdmin();
 }
-
+function apagarSuplemento(id) {
+    const sup = state.suplementos.find(s => s.id === id);
+    if (!sup) return;
+    if (!confirm(`Apagar "${sup.nome}" permanentemente?\nEsta ação não pode ser desfeita.`)) return;
+    state.suplementos = state.suplementos.filter(s => s.id !== id);
+    saveData();
+    renderSuplementosAdmin();
+}
 function renderSuplementosView() {
     renderSuplementosTabela('suplementosViewTableBody', document.getElementById('searchSuplemento')?.value || '');
 }
