@@ -2914,11 +2914,11 @@ function renderQuestionario() {
     const tipo = state.tiposConsulta.find(t => t.id === tipoId);
     const container = document.getElementById('questionarioContent');
 
+    // MRS sempre aparece no fim para menopausa
+    const mrsHtml = tipoId === 'menopausa' ? buildMRSQuestionario() : '';
+
     if (!tipo || !tipo.questionario || tipo.questionario.length === 0) {
-        container.innerHTML = '<div class="info-box"><p>Sem questionário configurado. Adicione campos em Administração > Tipos de Consulta.</p></div>';
-        if (tipoId === 'menopausa') {
-            container.innerHTML += buildMRSQuestionario();
-        }
+        container.innerHTML = `<div class="info-box"><p>Sem questionário configurado.</p></div>` + mrsHtml;
         return;
     }
 
@@ -3012,7 +3012,8 @@ function renderQuestionario() {
     }
 
     const mrsHtml = (tipoId === 'menopausa') ? buildMRSQuestionario() : '';
-    container.innerHTML = avisoAnterior + html + mrsHtml;
+ // garante que o mrsHtml é SEMPRE adicionado no fim para menopausa
+}
 
     // Listeners para multipla escolha
     for (let idx = 0; idx < campos.length; idx++) {
