@@ -4627,9 +4627,19 @@ function toggleSuplementoAtivo(id) {
 function apagarSuplemento(id) {
     const sup = state.suplementos.find(s => s.id === id);
     if (!sup) return;
-    if (!confirm(`Apagar "${sup.nome}" permanentemente?\nEsta ação não pode ser desfeita.`)) return;
+    if (!confirm(`Apagar ${sup.nome} permanentemente? Ação não pode ser desfeita.`)) return;
+    
+    // Remover do array local
     state.suplementos = state.suplementos.filter(s => s.id !== id);
-    saveData();
+    
+    // Apagar do Firebase diretamente
+    if (firebaseInitialized && db) {
+        db.collection('suplementos').doc(id).delete()
+            .then(() => console.log('Suplemento apagado do Firebase'))
+            .catch(err => console.error('Erro ao apagar do Firebase:', err));
+    }
+    
+    saveData();  // Sincroniza o resto
     renderSuplementosAdmin();
 }
 function renderSuplementosView() {
