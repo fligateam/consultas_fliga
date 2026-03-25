@@ -2079,24 +2079,232 @@ state.suplementos.forEach(sup => {
 
         function inicializarTiposConsulta() {
             return [
-                {
-                    id: 'menopausa',
-                    nome: 'Menopausa',
-                    cor: '#EC4899',
-                    pocDefaultIds: ['fsh', 'pressao_arterial', 'perfil_lipidico'],
-                    ativo: true,
-                    questionario: [
-                        { id:'q_idade', pergunta:'Idade', tipo:'numero', obrigatorio:true },
-                        { id:'q_ult_mens', pergunta:'Data da última menstruação', tipo:'data', obrigatorio:false },
-                        { id:'q_fase', pergunta:'Fase climatérica', tipo:'escolha', opcoes:['Pré-menopausa','Perimenopausa','Menopausa','Pós-menopausa'], obrigatorio:true },
-                        { id:'q_thr', pergunta:'Terapêutica Hormonal (THS) atual', tipo:'escolha', opcoes:['Não','Sim – estrogénio tópico','Sim – THS sistémica','Parou recentemente'], obrigatorio:true },
-                        { id:'q_motivo', pergunta:'Motivo principal da consulta', tipo:'escolha', opcoes:['Controlo de sintomas','Revisão medicação','Rastreio / prevenção','Outro'], obrigatorio:true },
-                        { id:'q_patologias', pergunta:'Patologias relevantes', tipo:'multipla', opcoes:['Osteoporose','Dislipidemia','HTA','Diabetes Tipo 2','Doença Cardiovascular','Cancro da mama (historial)','Nenhuma'], obrigatorio:false },
-                        { id:'q_medicacao', pergunta:'Medicação habitual (resumo)', tipo:'textarea', obrigatorio:false },
-                        { id:'q_suplementos_atuais', pergunta:'Suplementação atual', tipo:'textarea', obrigatorio:false },
-                        { id:'q_obs', pergunta:'Observações adicionais', tipo:'textarea', obrigatorio:false }
-                    ]
-                },
+               {
+    id: 'menopausa',
+    nome: 'Menopausa',
+    cor: '#EC4899',
+    pocDefaultIds: ['fsh', 'pressao_arterial', 'perfil_lipidico'],
+    ativo: true,
+    questionario: [
+
+        // ══════════════════════════════════════
+        // 1. IDENTIFICAÇÃO E ANAMNESE GERAL
+        // ══════════════════════════════════════
+        { id:'q_idade',           pergunta:'Idade',                                                           tipo:'numero',  obrigatorio:true },
+        { id:'q_profissao',       pergunta:'Profissão / contexto laboral',                                    tipo:'escolha',
+          opcoes:['Ativa – trabalho presencial','Ativa – trabalho remoto','Trabalhadora por turnos','Desempregada','Reformada','Outra'], obrigatorio:false },
+        { id:'q_fase',            pergunta:'Fase climatérica',                                                tipo:'escolha',
+          opcoes:['Pré-menopausa','Perimenopausa','Menopausa (< 5 anos)','Menopausa (≥ 5 anos)','Menopausa cirúrgica','Pós-menopausa'], obrigatorio:true },
+        { id:'q_ult_mens',        pergunta:'Data da última menstruação (aprox.)',                              tipo:'data',    obrigatorio:false },
+        { id:'q_menstruacao_hist',pergunta:'Histórico menstrual antes da menopausa',                          tipo:'escolha',
+          opcoes:['Ciclos regulares','Ciclos irregulares','Amenorreia prévia','Dismenorreia severa','SOP (Síndrome Ovário Poliquístico)'], obrigatorio:false },
+        { id:'q_paridade',        pergunta:'Paridade (número de gestações / partos)',                         tipo:'texto',   obrigatorio:false },
+        { id:'q_thr',             pergunta:'Terapêutica Hormonal de Substituição (THS)',                      tipo:'escolha',
+          opcoes:['Não faz','Sim – estrogénio tópico vaginal','Sim – THS sistémica oral','Sim – THS sistémica transdérmica (gel/adesivo)','Sim – implante hormonal','Suspendeu recentemente (< 1 ano)','Contraindicada'], obrigatorio:true },
+        { id:'q_thr_duracao',     pergunta:'Se faz THS, há quanto tempo?',                                   tipo:'escolha',
+          opcoes:['Menos de 6 meses','6 meses a 1 ano','1 a 3 anos','Mais de 3 anos'], obrigatorio:false },
+        { id:'q_thr_razao_nao',   pergunta:'Se não faz THS, principal razão',                                tipo:'escolha',
+          opcoes:['Contraindicação médica','Opção pessoal','Não lhe foi proposto','Medo de efeitos secundários','Intolerância prévia','Não aplicável'], obrigatorio:false },
+        { id:'q_ginecologia',     pergunta:'Seguimento em consulta de ginecologia',                          tipo:'escolha',
+          opcoes:['Não','Sim – regularmente (≤ 1 ano)','Sim – irregularmente'], obrigatorio:true },
+        { id:'q_ult_ginecologia', pergunta:'Data da última consulta de ginecologia',                         tipo:'data',    obrigatorio:false },
+        { id:'q_mamografia',      pergunta:'Última mamografia / rastreio mamário',                           tipo:'escolha',
+          opcoes:['Há menos de 1 ano','Há 1-2 anos','Há mais de 2 anos','Nunca realizou'], obrigatorio:false },
+        { id:'q_densitometria',   pergunta:'Última densitometria óssea (DEXA)',                              tipo:'escolha',
+          opcoes:['Há menos de 2 anos','Há 2-4 anos','Há mais de 4 anos','Nunca realizou'], obrigatorio:false },
+        { id:'q_pap_smear',       pergunta:'Último rastreio citologia cervical (PAP smear)',                 tipo:'escolha',
+          opcoes:['Há menos de 3 anos','Há mais de 3 anos','Nunca realizou','Não aplicável (histerectomia)'], obrigatorio:false },
+        { id:'q_motivo',          pergunta:'Motivo principal da consulta de hoje',                           tipo:'escolha',
+          opcoes:['Controlo de sintomas vasomotores (afrontamentos/suores)','Saúde óssea / osteoporose','Saúde cardiovascular','Saúde urogenital / atrofia vaginal','Saúde mental / humor / ansiedade','Dermocosmética / pele','Suplementação e nutrição','Revisão de medicação','Rastreio e prevenção','Queda de cabelo / unhas','Outro'], obrigatorio:true },
+
+        // ══════════════════════════════════════
+        // 2. SINTOMAS CLIMATÉRICOS ATUAIS
+        // ══════════════════════════════════════
+        { id:'q_sint_vasomotores', pergunta:'Sintomas vasomotores (afrontamentos / suores nocturnos)',       tipo:'escolha',
+          opcoes:['Ausentes','Ligeiros (não perturbam o dia a dia)','Moderados (perturbam ocasionalmente)','Severos (perturbam muito o sono e atividade)'], obrigatorio:false },
+        { id:'q_sint_urogenital',  pergunta:'Sintomas urogenitais',                                          tipo:'multipla',
+          opcoes:['Secura vaginal','Dor/desconforto nas relações sexuais (dispareunia)','Urgência urinária','Perdas de urina (incontinência)','Infeções urinárias recorrentes','Sem sintomas urogenitais'], obrigatorio:false },
+        { id:'q_libido',           pergunta:'Libido / interesse sexual',                                     tipo:'escolha',
+          opcoes:['Mantida','Diminuída ligeiramente','Diminuída significativamente','Ausente','Não aplicável'], obrigatorio:false },
+        { id:'q_sint_psico',       pergunta:'Sintomas psicológicos / emocionais',                            tipo:'multipla',
+          opcoes:['Irritabilidade / labilidade emocional','Ansiedade','Humor deprimido / tristeza','Dificuldade de concentração / "nevoeiro mental"','Perda de memória de curto prazo','Sem sintomas psicológicos relevantes'], obrigatorio:false },
+        { id:'q_sint_osteoarticular', pergunta:'Sintomas osteoarticulares',                                  tipo:'multipla',
+          opcoes:['Dores articulares (artralgias)','Dores musculares (mialgias)','Rigidez matinal','Sem queixas osteoarticulares'], obrigatorio:false },
+        { id:'q_sint_outros',      pergunta:'Outros sintomas relevantes',                                    tipo:'multipla',
+          opcoes:['Palpitações / ritmo cardíaco irregular','Cefaleias frequentes','Tonturas','Aumento de peso inexplicado','Fadiga persistente','Sem outros sintomas'], obrigatorio:false },
+        { id:'q_impacto_sint',     pergunta:'Impacto global dos sintomas na qualidade de vida',              tipo:'escolha',
+          opcoes:['Sem impacto','Impacto ligeiro','Impacto moderado','Impacto severo (afeta trabalho, relações, sono)'], obrigatorio:false },
+
+        // ══════════════════════════════════════
+        // 3. ESTILO DE VIDA
+        // ══════════════════════════════════════
+        { id:'q_atividade',       pergunta:'Prática de atividade física',                                    tipo:'escolha',
+          opcoes:['Sedentária – não pratica','Ocasional (1x/semana ou menos)','Regular (2-3x/semana)','Intensa (≥4x/semana)'], obrigatorio:true },
+        { id:'q_tipo_atividade',  pergunta:'Tipo(s) de atividade física praticada',                          tipo:'multipla',
+          opcoes:['Caminhada','Corrida','Ginásio/Musculação','Aulas de grupo/yoga','Natação','Ciclismo','Pilates','Dança','Outra'], obrigatorio:false },
+        { id:'q_atividade_obs',   pergunta:'Limitações para a prática de exercício físico',                  tipo:'textarea', obrigatorio:false },
+        { id:'q_alimentacao',     pergunta:'Padrão alimentar predominante',                                   tipo:'escolha',
+          opcoes:['Mediterrânea / equilibrada','Rica em açúcares e gorduras saturadas','Cetogénica','Vegetariana / Vegana','Irregular – pula refeições','Hipocalórica muito restritiva','Outra'], obrigatorio:true },
+        { id:'q_frutas_legumes',  pergunta:'Consumo de frutas e vegetais',                                   tipo:'escolha',
+          opcoes:['≥ 5 porções/dia','3-4 porções/dia','1-2 porções/dia','Raramente consome'], obrigatorio:false },
+        { id:'q_lacticinios',     pergunta:'Consumo de laticínios / cálcio alimentar',                       tipo:'escolha',
+          opcoes:['Adequado (≥ 2-3 porções/dia)','Moderado (1 porção/dia)','Baixo (raramente)','Não consome (intolerância/opção)'], obrigatorio:false },
+        { id:'q_nutricao',        pergunta:'Acompanhamento por profissional de nutrição',                     tipo:'escolha',
+          opcoes:['Não','Sim – atualmente','Sim – no passado'], obrigatorio:false },
+        { id:'q_cafe',            pergunta:'Consumo de café diário',                                         tipo:'escolha',
+          opcoes:['Não consome','1 chávena/dia','2-3 chávenas/dia','4 ou mais chávenas/dia'], obrigatorio:false },
+        { id:'q_alcool',          pergunta:'Consumo de álcool',                                              tipo:'escolha',
+          opcoes:['Não consome','Ocasional (festas/social)','Moderado (até 1 copo/dia)','Elevado (> 1 copo/dia)'], obrigatorio:false },
+        { id:'q_tabaco',          pergunta:'Tabagismo',                                                      tipo:'escolha',
+          opcoes:['Não fumadora','Ex-fumadora (parou há < 5 anos)','Ex-fumadora (parou há ≥ 5 anos)','Fumadora atual – quantidade/dia:'], obrigatorio:false },
+        { id:'q_tabaco_qty',      pergunta:'Se fumadora atual — cigarros por dia (aprox.)',                  tipo:'numero', obrigatorio:false },
+        { id:'q_sono',            pergunta:'Qualidade do sono',                                              tipo:'escolha',
+          opcoes:['Boa (≥ 7h reparadoras)','Dificuldade em adormecer','Acorda frequentemente durante a noite','Acorda muito cedo e não dorme mais','Insónia crónica'], obrigatorio:false },
+        { id:'q_stress',          pergunta:'Nível de stress percecionado',                                   tipo:'escolha',
+          opcoes:['Baixo','Moderado','Elevado','Muito elevado – impacta significativamente o dia a dia'], obrigatorio:false },
+        { id:'q_apoio_social',    pergunta:'Suporte social / familiar percecionado',                         tipo:'escolha',
+          opcoes:['Bom suporte','Suporte moderado','Pouco suporte','Isolamento social'], obrigatorio:false },
+
+        // ══════════════════════════════════════
+        // 4. HISTÓRICO DE SAÚDE
+        // ══════════════════════════════════════
+        { id:'q_patologias',      pergunta:'Problemas de saúde conhecidos (diagnóstico médico)',              tipo:'multipla',
+          opcoes:[
+            'Hipertensão arterial',
+            'Dislipidemia (colesterol / triglicéridos)',
+            'Diabetes Tipo 2 / Pré-diabetes',
+            'Síndrome metabólica',
+            'Doença cardiovascular (EAM, AVC, angina, trombose)',
+            'Osteoporose / Osteopenia',
+            'Alterações hematológicas (anemia, ferropénia)',
+            'Hipotiroidismo',
+            'Hipertiroidismo / Doença de Graves',
+            'Cancro da mama (pessoal)',
+            'Cancro do ovário (pessoal)',
+            'Endometriose',
+            'Cirurgia ginecológica prévia (histerectomia, ooforectomia)',
+            'Atrofia vaginal / Síndrome genitourinária da menopausa',
+            'Depressão / Perturbação de ansiedade',
+            'Fibromialgia',
+            'Doença renal crónica',
+            'Doença hepática',
+            'Nenhuma patologia relevante'
+          ], obrigatorio:false },
+        { id:'q_patologias_outros',   pergunta:'Outros problemas de saúde (especificar)',                    tipo:'textarea', obrigatorio:false },
+        { id:'q_cirurgias',           pergunta:'Cirurgias anteriores relevantes (tipo e data aprox.)',        tipo:'textarea', obrigatorio:false },
+        { id:'q_fraturas',            pergunta:'Fraturas ósseas nos últimos 5 anos',                         tipo:'escolha',
+          opcoes:['Não','Sim – traumática (queda / acidente)','Sim – por fragilidade óssea (sem trauma significativo)'], obrigatorio:false },
+        { id:'q_cancro_familiar',     pergunta:'Histórico familiar de cancro mama/ovário — em quem e grau de parentesco', tipo:'textarea', obrigatorio:false },
+        { id:'q_cardio_familiar',     pergunta:'Histórico familiar de doença cardiovascular prematura (< 65 anos)', tipo:'escolha',
+          opcoes:['Não','Sim – pai / irmão','Sim – mãe / irmã','Desconhece'], obrigatorio:false },
+        { id:'q_alergias',            pergunta:'Alergias conhecidas (fármacos, plantas, alimentos, látex)',   tipo:'textarea', obrigatorio:false },
+
+        // ══════════════════════════════════════
+        // 5. MEDICAÇÃO E SEGURANÇA
+        // ══════════════════════════════════════
+        { id:'q_medicacao',           pergunta:'Medicação crónica atual (nome, dose, frequência)',            tipo:'textarea', obrigatorio:false },
+        { id:'q_suplementos_prev',    pergunta:'Suplementos que toma por iniciativa própria',                 tipo:'textarea', obrigatorio:false },
+        { id:'q_interacoes',          pergunta:'Interações medicamentosas relevantes identificadas',          tipo:'textarea', obrigatorio:false },
+        { id:'q_efeitos_adversos',    pergunta:'Efeitos adversos relevantes da medicação atual',              tipo:'textarea', obrigatorio:false },
+        { id:'q_contra_indicacoes',   pergunta:'Contraindicações / precauções identificadas',                 tipo:'textarea', obrigatorio:false },
+        { id:'q_adesao',              pergunta:'Adesão à terapêutica prescrita',                              tipo:'escolha',
+          opcoes:['Boa adesão – toma sempre como prescrito','Adesão moderada – esquece ocasionalmente','Má adesão – toma raramente','Suspendeu por conta própria'], obrigatorio:false },
+
+        // ══════════════════════════════════════
+        // 6. PARÂMETROS BIOQUÍMICOS E CLÍNICOS
+        // ══════════════════════════════════════
+        { id:'q_parametros_peso',      pergunta:'Peso (kg)',                                                  tipo:'numero', obrigatorio:false },
+        { id:'q_parametros_altura',    pergunta:'Altura (cm)',                                                tipo:'numero', obrigatorio:false },
+        { id:'q_parametros_perimetro', pergunta:'Perímetro abdominal (cm)',                                   tipo:'numero', obrigatorio:false },
+        { id:'q_parametros_pas',       pergunta:'Pressão arterial sistólica – PAS (mmHg)',                    tipo:'numero', obrigatorio:false },
+        { id:'q_parametros_pad',       pergunta:'Pressão arterial diastólica – PAD (mmHg)',                   tipo:'numero', obrigatorio:false },
+        { id:'q_parametros_pulso',     pergunta:'Pulso (bpm)',                                                tipo:'numero', obrigatorio:false },
+        { id:'q_lipidico_ct',          pergunta:'Colesterol total (mg/dL)',                                   tipo:'numero', obrigatorio:false },
+        { id:'q_lipidico_tg',          pergunta:'Triglicéridos (mg/dL)',                                      tipo:'numero', obrigatorio:false },
+        { id:'q_lipidico_hdl',         pergunta:'C-HDL (mg/dL)',                                              tipo:'numero', obrigatorio:false },
+        { id:'q_lipidico_ldl',         pergunta:'C-LDL (mg/dL)',                                              tipo:'numero', obrigatorio:false },
+        { id:'q_lipidico_risco',       pergunta:'Rácio risco cardiovascular (CT/HDL)',                        tipo:'numero', obrigatorio:false },
+        { id:'q_glicemia',             pergunta:'Glicemia em jejum (mg/dL)',                                  tipo:'numero', obrigatorio:false },
+        { id:'q_hba1c',                pergunta:'Hemoglobina A1c – HbA1c (%)',                                tipo:'numero', obrigatorio:false },
+        { id:'q_vitd',                 pergunta:'Vitamina D 25-OH (ng/mL)',                                   tipo:'numero', obrigatorio:false },
+        { id:'q_ferritina',            pergunta:'Ferritina (ng/mL)',                                          tipo:'numero', obrigatorio:false },
+        { id:'q_ferro',                pergunta:'Ferro sérico (µg/dL)',                                       tipo:'numero', obrigatorio:false },
+        { id:'q_tsh',                  pergunta:'TSH – Hormona tiroideia (µUI/mL)',                           tipo:'numero', obrigatorio:false },
+        { id:'q_fsh_val',              pergunta:'FSH (mUI/mL)',                                               tipo:'numero', obrigatorio:false },
+        { id:'q_estradiol',            pergunta:'Estradiol (pg/mL)',                                          tipo:'numero', obrigatorio:false },
+        { id:'q_calcio',               pergunta:'Cálcio sérico (mg/dL)',                                      tipo:'numero', obrigatorio:false },
+        { id:'q_pcr',                  pergunta:'PCR – Proteína C Reativa (mg/L)',                            tipo:'numero', obrigatorio:false },
+        { id:'q_parametros_obs',       pergunta:'Observações sobre parâmetros analíticos',                    tipo:'textarea', obrigatorio:false },
+        { id:'q_analises_previas',     pergunta:'Dados analíticos anteriores fornecidos pela utente',          tipo:'textarea', obrigatorio:false },
+
+        // ══════════════════════════════════════
+        // 7. INQUÉRITO DE DIAGNÓSTICO DE PELE
+        // ══════════════════════════════════════
+        { id:'q_tipo_pele',            pergunta:'Tipo de pele auto-percecionado',                             tipo:'escolha',
+          opcoes:['Normal','Seca','Oleosa','Mista','Sensível / reativa'], obrigatorio:false },
+        { id:'q_fototipo',             pergunta:'Fototipo de Fitzpatrick (tom de pele)',                       tipo:'escolha',
+          opcoes:['I – Muito clara, sempre queima, nunca bronzeia','II – Clara, queima facilmente, bronzeia pouco','III – Intermédia, queima moderadamente, bronzeia','IV – Morena clara, queima raramente, bronzeia bem','V – Morena escura, raramente queima','VI – Muito escura, nunca queima'], obrigatorio:false },
+        { id:'q_exposicao_solar',      pergunta:'Exposição solar habitual',                                   tipo:'escolha',
+          opcoes:['Mínima (trabalho interior, evita sol)','Moderada (fins de semana, passeios)','Elevada (trabalho exterior ou exposição frequente)','Uso de cama de bronzear'], obrigatorio:false },
+        { id:'q_rotina_pele',          pergunta:'Rotina de cuidados de pele atual',                           tipo:'escolha',
+          opcoes:['Não tem rotina','Só desmaquilha / limpa','Limpeza + hidratante','Rotina completa (limpeza, sérum, creme, SPF)','Rotina médico-estética acompanhada (consultório/clínica)'], obrigatorio:false },
+        { id:'q_spf',                  pergunta:'Uso de protetor solar facial',                               tipo:'escolha',
+          opcoes:['Não usa','Só no verão / praia','Todo o ano (em dias de sol)','Diariamente, independentemente do tempo'], obrigatorio:false },
+        { id:'q_preocupacoes_pele',    pergunta:'Principais preocupações de pele',                            tipo:'multipla',
+          opcoes:[
+            'Desidratação',
+            'Pele áspera ao toque',
+            'Flacidez no rosto e/ou pescoço',
+            'Rugas mais evidentes',
+            'Perda de luminosidade / opacidade',
+            'Manchas de pigmentação / hiperpigmentação',
+            'Sensibilidade cutânea',
+            'Acne adulta / impurezas',
+            'Rosácea e/ou vermelhidão',
+            'Aumento da reatividade cutânea',
+            'Queda de cabelo / alopécia',
+            'Unhas fracas / frágeis',
+            'Flacidez corporal',
+            'Celulite',
+            'Outra'
+          ], obrigatorio:false },
+        { id:'q_preocupacoes_outras',  pergunta:'Outra(s) preocupação(ões) de pele (especificar)',            tipo:'textarea', obrigatorio:false },
+        { id:'q_zona_corporal',        pergunta:'Zonas corporais com maior preocupação',                      tipo:'multipla',
+          opcoes:['Rosto','Pescoço e decote','Mãos','Cabelo / couro cabeludo','Corpo (geral)','Zona íntima / vulvar'], obrigatorio:false },
+        { id:'q_tratamentos_previos',  pergunta:'Tratamentos estéticos / dermatológicos anteriores',          tipo:'multipla',
+          opcoes:['Nunca fez','Peeling químico','Laser / IPL','Toxina botulínica (Botox)','Preenchedores de ácido hialurónico','Radiofrequência','Microneedling / Dermapen','Mesoterapia','Outro'], obrigatorio:false },
+        { id:'q_cosmeticos_atuais',    pergunta:'Produtos de cosmética / dermofarmácia que usa atualmente',   tipo:'textarea', obrigatorio:false },
+        { id:'q_reacoes_cosmeticos',   pergunta:'Reações adversas a cosméticos (passado ou atual)',           tipo:'escolha',
+          opcoes:['Nunca teve','Sim – irritação / vermelhidão','Sim – alergia de contacto','Sim – agravamento de acne','Não sabe / não testou'], obrigatorio:false },
+
+        // ══════════════════════════════════════
+        // 8. PLANO DE DERMOCOSMÉTICA
+        // ══════════════════════════════════════
+        { id:'q_plano_dermocos_limpeza', pergunta:'Plano Dermocosmética — Limpeza / desmaquilhagem sugerida', tipo:'textarea', obrigatorio:false },
+        { id:'q_plano_dermocos_serum',   pergunta:'Plano Dermocosmética — Sérum(s) recomendado(s)',           tipo:'textarea', obrigatorio:false },
+        { id:'q_plano_dermocos_creme',   pergunta:'Plano Dermocosmética — Creme(s) recomendado(s)',           tipo:'textarea', obrigatorio:false },
+        { id:'q_plano_dermocos_spf',     pergunta:'Plano Dermocosmética — Fotoproteção recomendada',          tipo:'textarea', obrigatorio:false },
+        { id:'q_plano_dermocos_corpo',   pergunta:'Plano Dermocosmética — Cuidados corporais recomendados',   tipo:'textarea', obrigatorio:false },
+        { id:'q_plano_dermocos_cabelo',  pergunta:'Plano Dermocosmética — Cuidados capilares / unhas',        tipo:'textarea', obrigatorio:false },
+        { id:'q_plano_dermocos_notas',   pergunta:'Notas adicionais sobre plano de dermocosmética',           tipo:'textarea', obrigatorio:false },
+
+        // ══════════════════════════════════════
+        // 9. SUPLEMENTAÇÃO
+        // ══════════════════════════════════════
+        { id:'q_suplementos_atuais',   pergunta:'Suplementação atual por iniciativa própria (nome, dose, frequência)', tipo:'textarea', obrigatorio:false },
+        { id:'q_plano_suplementacao',  pergunta:'Plano de suplementação proposto na consulta',                tipo:'textarea', obrigatorio:false },
+
+        // ══════════════════════════════════════
+        // 10. OBSERVAÇÕES E PRÓXIMOS PASSOS
+        // ══════════════════════════════════════
+        { id:'q_encaminhamento',       pergunta:'Encaminhamento recomendado',                                 tipo:'multipla',
+          opcoes:['Médico de família / clínica geral','Ginecologista','Endocrinologista','Cardiologista','Reumatologista','Dermatologista','Psicologia / Psiquiatria','Nutricionista','Fisioterapia / medicina física','Não necessário neste momento'], obrigatorio:false },
+        { id:'q_proxima_consulta',     pergunta:'Periodicidade sugerida para próxima consulta',               tipo:'escolha',
+          opcoes:['1 mês','3 meses','6 meses','1 ano','Conforme necessidade'], obrigatorio:false },
+        { id:'q_obs_finais',           pergunta:'Observações finais, notas clínicas e recomendações gerais',  tipo:'textarea', obrigatorio:false }
+    ]
+},,
+
                 { 
                     id: 'diabetes', 
                     nome: 'Diabetes Mellitus', 
