@@ -4831,63 +4831,63 @@ function gerarGuiaPDF(consultaId) {
 }
 // MRS — Menopause Rating Scale
 var MRS_QUESTIONS = [
-    { id:'mrs1',  label:'Ondas de calor / suores noturnos',                              domain:'somatic' },
-    { id:'mrs2',  label:'Desconforto cardíaco (palpitações, ritmo irregular)',           domain:'somatic' },
-    { id:'mrs3',  label:'Perturbações do sono (adormecer, manter, acordar cedo)',        domain:'somatic' },
-    { id:'mrs4',  label:'Dores articulares e/ou musculares',                             domain:'somatic' },
-    { id:'mrs5',  label:'Humor deprimido (tristeza, choro, desmotivação)',               domain:'psych'   },
-    { id:'mrs6',  label:'Irritabilidade (nervosismo, tensão, agressividade)',            domain:'psych'   },
-    { id:'mrs7',  label:'Ansiedade (inquietação, ataques de pânico)',                    domain:'psych'   },
-    { id:'mrs8',  label:'Exaustão física e mental (fadiga, memória, concentração)',      domain:'psych'   },
-    { id:'mrs9',  label:'Problemas sexuais (líbido, atividade sexual)',                  domain:'uro'     },
-    { id:'mrs10', label:'Problemas urinários (urgência, perdas, infeções recorrentes)',  domain:'uro'     },
-    { id:'mrs11', label:'Secura vaginal / desconforto nas relações sexuais',             domain:'uro'     }
+    { id:'mrs1',  label:'Ondas de calor / suores noturnos',                             domain:'somatic' },
+    { id:'mrs2',  label:'Desconforto cardíaco (palpitações, ritmo irregular)',          domain:'somatic' },
+    { id:'mrs3',  label:'Perturbações do sono (adormecer, manter, acordar cedo)',       domain:'somatic' },
+    { id:'mrs4',  label:'Dores articulares e/ou musculares',                            domain:'somatic' },
+    { id:'mrs5',  label:'Humor deprimido (tristeza, choro, desmotivação)',              domain:'psych'   },
+    { id:'mrs6',  label:'Irritabilidade (nervosismo, tensão, agressividade)',           domain:'psych'   },
+    { id:'mrs7',  label:'Ansiedade (inquietação, ataques de pânico)',                   domain:'psych'   },
+    { id:'mrs8',  label:'Exaustão física e mental (fadiga, memória, concentração)',     domain:'psych'   },
+    { id:'mrs9',  label:'Problemas sexuais (líbido, atividade sexual)',                 domain:'uro'     },
+    { id:'mrs10', label:'Problemas urinários (urgência, perdas, infeções recorrentes)', domain:'uro'     },
+    { id:'mrs11', label:'Secura vaginal / desconforto nas relações sexuais',            domain:'uro'     }
 ];
 
 function buildMRSQuestionario() {
-    const rows = MRS_QUESTIONS.map((q, i) => {
-        const cells = [0,1,2,3,4].map(v =>
-            '<td style="text-align:center;padding:6px;width:52px;">'
-          + '<input type="radio" name="mrs_' + q.id + '" value="' + v + '"'
-          + ' style="width:17px;height:17px;accent-color:#9d174d;cursor:pointer;"'
-          + ' onchange="calcMRSAuto()"></td>'
-        ).join('');
+    var rows = MRS_QUESTIONS.map(function(q, i) {
+        var cells = [0,1,2,3,4].map(function(v) {
+            return '<td style="text-align:center;padding:6px;width:52px;">'
+                + '<input type="radio" name="mrs_' + q.id + '" value="' + v + '"'
+                + ' style="width:17px;height:17px;accent-color:#9d174d;cursor:pointer;"'
+                + ' onchange="calcMRSAuto()"></td>';
+        }).join('');
         return '<tr style="border-bottom:1px solid #fce7f3;">'
-          + '<td style="padding:7px 6px;font-size:12px;vertical-align:middle;">' + (i+1) + '. ' + q.label + '</td>'
-          + cells + '</tr>';
+            + '<td style="padding:7px 6px;font-size:12px;vertical-align:middle;">' + (i+1) + '. ' + q.label + '</td>'
+            + cells + '</tr>';
     }).join('');
-    const headers = [0,1,2,3,4].map(v =>
-        '<th style="text-align:center;padding:8px;background:#fce7f3;color:#9d174d;border-bottom:2px solid #f9a8d4;width:52px;">' + v + '</th>'
-    ).join('');
+    var headers = [0,1,2,3,4].map(function(v) {
+        return '<th style="text-align:center;padding:8px;background:#fce7f3;color:#9d174d;border-bottom:2px solid #f9a8d4;width:52px;">' + v + '</th>';
+    }).join('');
     return '<div style="background:#fdf4f9;border:1px solid #f9a8d4;border-radius:10px;padding:16px;margin-top:16px;">'
-      + '<h4 style="color:#9d174d;margin-bottom:6px;">📊 Escala MRS (Menopause Rating Scale)</h4>'
-      + '<p style="font-size:11px;color:#6b7280;margin-bottom:10px;">0 = Sem sintomas · 1 = Ligeiro · 2 = Moderado · 3 = Grave · 4 = Muito grave</p>'
-      + '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">'
-      + '<thead><tr>'
-      + '<th style="text-align:left;padding:8px;background:#fce7f3;color:#9d174d;border-bottom:2px solid #f9a8d4;">Sintoma</th>'
-      + headers + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
-      + '<div id="mrsScoreBox" style="display:none;margin-top:12px;padding:12px;background:#fff;border-radius:8px;border:1px solid #f9a8d4;">'
-      +   '<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">'
-      +     '<div><span style="font-size:11px;color:#6b7280">Score Total</span><br>'
-      +       '<strong style="font-size:24px;color:#9d174d" id="mrsScoreTotal">0</strong>'
-      +       '<span style="font-size:11px;color:#6b7280">/44</span></div>'
-      +     '<div id="mrsSeverityBadge"></div>'
-      +     '<div style="flex:1;font-size:12px;color:#6b7280;" id="mrsRecomBox"></div>'
-      +   '</div>'
-      +   '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;font-size:12px;" id="mrsSubScores"></div>'
-      + '</div>'
-      + '<div id="mrsAlertas"></div>'
-      + '</div>';
+        + '<h4 style="color:#9d174d;margin-bottom:6px;">📊 Escala MRS (Menopause Rating Scale)</h4>'
+        + '<p style="font-size:11px;color:#6b7280;margin-bottom:10px;">0 = Sem sintomas · 1 = Ligeiro · 2 = Moderado · 3 = Grave · 4 = Muito grave</p>'
+        + '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">'
+        + '<thead><tr>'
+        + '<th style="text-align:left;padding:8px;background:#fce7f3;color:#9d174d;border-bottom:2px solid #f9a8d4;">Sintoma</th>'
+        + headers + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
+        + '<div id="mrsScoreBox" style="display:none;margin-top:12px;padding:12px;background:#fff;border-radius:8px;border:1px solid #f9a8d4;">'
+        +   '<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">'
+        +     '<div><span style="font-size:11px;color:#6b7280">Score Total</span><br>'
+        +       '<strong style="font-size:24px;color:#9d174d" id="mrsScoreTotal">0</strong>'
+        +       '<span style="font-size:11px;color:#6b7280">/44</span></div>'
+        +     '<div id="mrsSeverityBadge"></div>'
+        +     '<div style="flex:1;font-size:12px;color:#6b7280;" id="mrsRecomBox"></div>'
+        +   '</div>'
+        +   '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;font-size:12px;" id="mrsSubScores"></div>'
+        + '</div>'
+        + '<div id="mrsAlertas"></div>'
+        + '</div>';
 }
 
 function calcMRSAuto() {
-    let total = 0;
-    const sub = { somatic:0, psych:0, uro:0 };
-    const scores = {};
-    MRS_QUESTIONS.forEach(q => {
-        const el = document.querySelector('input[name="mrs_' + q.id + '"]:checked');
+    var total = 0;
+    var sub = { somatic:0, psych:0, uro:0 };
+    var scores = {};
+    MRS_QUESTIONS.forEach(function(q) {
+        var el = document.querySelector('input[name="mrs_' + q.id + '"]:checked');
         if (el) {
-            const v = parseInt(el.value);
+            var v = parseInt(el.value);
             scores[q.id] = v;
             total += v;
             sub[q.domain] += v;
@@ -4895,41 +4895,36 @@ function calcMRSAuto() {
     });
     if (Object.keys(scores).length === 0) return;
     if (state.currentConsulta) {
-        state.currentConsulta._mrsDraft = { total, sub, scores };
+        state.currentConsulta._mrsDraft = { total: total, sub: sub, scores: scores };
     }
-
-    let sevStyle, sevLabel, recom;
+    var sevStyle, sevLabel, recom;
     if      (total <= 4)  { sevStyle = 'background:#d1fae5;color:#065f46'; sevLabel = 'Sem / Mínima sintomatologia'; recom = 'Medidas preventivas de estilo de vida.'; }
-    else if (total <= 8)  { sevStyle = 'background:#fef9c3;color:#854d0e'; sevLabel = 'Sintomatologia ligeira';       recom = 'Suplementação preventiva. Reavaliação em 3 meses.'; }
-    else if (total <= 15) { sevStyle = 'background:#ffedd5;color:#9a3412'; sevLabel = 'Sintomatologia moderada';      recom = 'Suplementação ativa. Considerar referenciação médica.'; }
-    else                  { sevStyle = 'background:#fee2e2;color:#991b1b'; sevLabel = 'Sintomatologia grave';          recom = 'Referenciação médica urgente.'; }
-
-    const box = document.getElementById('mrsScoreBox');
+    else if (total <= 8)  { sevStyle = 'background:#fef9c3;color:#854d0e'; sevLabel = 'Sintomatologia ligeira';      recom = 'Suplementação preventiva. Reavaliação em 3 meses.'; }
+    else if (total <= 15) { sevStyle = 'background:#ffedd5;color:#9a3412'; sevLabel = 'Sintomatologia moderada';     recom = 'Suplementação ativa. Considerar referenciação médica.'; }
+    else                  { sevStyle = 'background:#fee2e2;color:#991b1b'; sevLabel = 'Sintomatologia grave';         recom = 'Referenciação médica urgente.'; }
+    var box = document.getElementById('mrsScoreBox');
     if (!box) return;
     box.style.display = 'block';
     document.getElementById('mrsScoreTotal').textContent = total;
-
-    const badge = document.getElementById('mrsSeverityBadge');
+    var badge = document.getElementById('mrsSeverityBadge');
     badge.setAttribute('style', 'padding:5px 14px;border-radius:999px;font-size:12px;font-weight:700;' + sevStyle);
     badge.textContent = sevLabel;
-
     document.getElementById('mrsRecomBox').textContent = recom;
     document.getElementById('mrsSubScores').innerHTML =
         '<div style="background:#fdf4f9;padding:6px 10px;border-radius:6px;">Somático: <strong>' + sub.somatic + '</strong>/20</div>'
       + '<div style="background:#fdf4f9;padding:6px 10px;border-radius:6px;">Psicológico: <strong>' + sub.psych + '</strong>/16</div>'
       + '<div style="background:#fdf4f9;padding:6px 10px;border-radius:6px;">Urogenital: <strong>' + sub.uro + '</strong>/12</div>';
-
-    const utente = state.utentes && state.utentes.find(u => u.nif === (state.currentConsulta && state.currentConsulta.utenteNIF));
-    const alertas = [];
+    var utente = state.utentes && state.utentes.find(function(u) { return u.nif === (state.currentConsulta && state.currentConsulta.utenteNIF); });
+    var alertas = [];
     if (utente) {
-        const pat = ((utente.patologias || []).join(' ')).toLowerCase();
-        const med = ((utente.medicacao  || []).join(' ')).toLowerCase();
-        const al  = ((utente.alergias   || []).join(' ')).toLowerCase();
+        var pat = ((utente.patologias || []).join(' ')).toLowerCase();
+        var med = ((utente.medicacao  || []).join(' ')).toLowerCase();
+        var al  = ((utente.alergias   || []).join(' ')).toLowerCase();
         if (pat.includes('mama') || pat.includes('cancro') || pat.includes('neoplasia'))
             alertas.push('Antecedente neoplásico — evitar isoflavonas / fitoestrogénios sem aval médico.');
         if (pat.includes('trombose') || pat.includes('avc') || pat.includes('embolia'))
             alertas.push('Tromboembolismo/AVC — precaução com Ómega-3 em dose alta e Vitamina E.');
-        if (med.includes('varfarina') || med.includes('anticoagulante') || med.includes('rivaroxabano'))
+        if (pat.includes('varfarina') || pat.includes('anticoagulante') || pat.includes('rivaroxabano'))
             alertas.push('Anticoagulante em curso — Ómega-3 com cautela; isoflavonas com precaução.');
         if (al.includes('soja'))
             alertas.push('Alergia à soja — verificar origem das isoflavonas.');
@@ -4937,16 +4932,16 @@ function calcMRSAuto() {
     document.getElementById('mrsAlertas').innerHTML = alertas.length
         ? '<div style="background:#fff7ed;border:1px solid #fb923c;border-radius:8px;padding:10px;margin-top:8px;font-size:12px;color:#9a3412;">'
           + '<strong>Alertas clínicos automáticos</strong>'
-          + '<ul style="margin:4px 0 0 14px;">' + alertas.map(a => '<li>' + a + '</li>').join('') + '</ul>'
+          + '<ul style="margin:4px 0 0 14px;">' + alertas.map(function(a){ return '<li>' + a + '</li>'; }).join('') + '</ul>'
           + '</div>'
         : '';
 }
 
 function getMRSScoresFromForm() {
-    const scores = {};
+    var scores = {};
     if (typeof MRS_QUESTIONS === 'undefined') return scores;
-    MRS_QUESTIONS.forEach(q => {
-        const el = document.querySelector('input[name="mrs_' + q.id + '"]:checked');
+    MRS_QUESTIONS.forEach(function(q) {
+        var el = document.querySelector('input[name="mrs_' + q.id + '"]:checked');
         if (el) scores[q.id] = parseInt(el.value);
     });
     return scores;
