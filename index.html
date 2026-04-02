@@ -1319,6 +1319,7 @@
                 <button class="btn btn-secondary" onclick="closeModal('novaConsultaModal')">Cancelar</button>
                 <button id="btnAvancar" class="btn btn-primary" onclick="avancarConsulta()">Avançar</button>
                 <button id="btnFinalizar" class="btn btn-primary hidden" onclick="finalizarConsulta()">Finalizar & Guardar</button>
+                    <button id="btnAnularConsulta" class="btn btn-danger hidden" onclick="anularConsultaAtual()" style="background:#dc2626;color:#fff;border:none;">🚫 Anular Consulta</button>
             </div>
         </div>
     </div>
@@ -1755,16 +1756,23 @@ suplementos: [],
             state.consultas.push({ id: doc.id, ...doc.data() });
         });
         
-// Processar tipos de consulta
-state.tiposConsulta = [];
-tiposSnap.forEach(doc => state.tiposConsulta.push({ id: doc.id, ...doc.data() }));
-
-// FORÇAR MENOPAUSA com questionário BASE sempre
-const menopausaExists = state.tiposConsulta.some(t => t.id === 'menopausa');
-if (!menopausaExists) {
-    const tiposBase = inicializarTiposConsulta();
-    state.tiposConsulta = [...state.tiposConsulta, ...tiposBase.filter(t => t.id === 'menopausa')];
-}
+        // Processar tipos de consulta
+        state.tiposConsulta = [];
+        tiposSnap.forEach(doc => {
+            state.tiposConsulta.push({ id: doc.id, ...doc.data() });
+        });
+        if (state.tiposConsulta.length === 0) {
+            state.tiposConsulta = inicializarTiposConsulta();
+        } else {
+            // Garantir que menopausa tem sempre questionário base
+            const mIdx = state.tiposConsulta.findIndex(t => t.id === 'menopausa');
+            const mBase = inicializarTiposConsulta().find(t => t.id === 'menopausa');
+            if (mIdx === -1) {
+                state.tiposConsulta.push(mBase);
+            } else if (!state.tiposConsulta[mIdx].questionario || state.tiposConsulta[mIdx].questionario.length === 0) {
+                state.tiposConsulta[mIdx].questionario = mBase.questionario;
+            }
+        }
         
         // Processar testes POC
         state.testesPOC = [];
@@ -1983,42 +1991,43 @@ state.suplementos.forEach(sup => {
             });
         }
 
-function loadFromLocalStorage() {
-    const saved = localStorage.getItem('farmaciaConsultasData');
-    if (saved) {
-        try {
-            const data = JSON.parse(saved);
-            state.utentes = data.utentes || [];
-            state.consultas = data.consultas || [];
-            state.tiposConsulta = data.tiposConsulta || [];
-            state.testesPOC = data.testesPOC || [];
-            state.suplementos = data.suplementos || [];
-            state.utilizadores = data.utilizadores || [];
-            state.config = data.config || {};
-            state.protocolos = data.protocolos || [];
-            state.lastSync = data.lastSync || null;
-            
-            // FORÇAR MENOPAUSA com questionário BASE sempre (igual ao loadFromServer)
-            const menopausaExists = state.tiposConsulta.some(t => t.id === 'menopausa');
-            if (!menopausaExists) {
-                const tiposBase = inicializarTiposConsulta();
-                const menopausaBase = tiposBase.find(t => t.id === 'menopausa');
-                if (menopausaBase) {
-                    state.tiposConsulta.push(menopausaBase);
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('farmaciaConsultasData');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    state.utentes = data.utentes || [];
+                    state.consultas = data.consultas || [];
+                    state.tiposConsulta = data.tiposConsulta || [];
+                    if (state.tiposConsulta.length === 0) {
+                        state.tiposConsulta = inicializarTiposConsulta();
+                    } else {
+                        // Garantir que menopausa tem sempre questionário base
+                        const mIdx = state.tiposConsulta.findIndex(t => t.id === 'menopausa');
+                        const mBase = inicializarTiposConsulta().find(t => t.id === 'menopausa');
+                        if (mIdx === -1) {
+                            state.tiposConsulta.push(mBase);
+                        } else if (!state.tiposConsulta[mIdx].questionario || state.tiposConsulta[mIdx].questionario.length === 0) {
+                            state.tiposConsulta[mIdx].questionario = mBase.questionario;
+                        }
+                    }
+                    state.testesPOC = data.testesPOC || inicializarTestesPOC();
+            state.suplementos = data.suplementos || []; 
+                    state.utilizadores = data.utilizadores || state.utilizadores;
+                    state.config = data.config || state.config;
+                    state.protocolos = data.protocolos || [];
+                    state.lastSync = data.lastSync || null;
+                    state.syncStatus = 'local';
+                    updateSyncIndicator();
+                    console.log('📁 Dados carregados do localStorage');
+                } catch(e) {
+                    console.error('Erro ao carregar dados:', e);
+                    inicializarDadosDemo();
                 }
+            } else {
+                inicializarDadosDemo();
             }
-            
-            state.syncStatus = 'local';
-            updateSyncIndicator();
-            console.log('Dados carregados do localStorage');
-        } catch (e) {
-            console.error('Erro ao carregar dados:', e);
-            inicializarDadosDemo();
         }
-    } else {
-        inicializarDadosDemo();
-    }
-}
 
         function saveData() {
             // Sempre tentar guardar no Firebase
@@ -2091,15 +2100,16 @@ function loadFromLocalStorage() {
             }
         }
 
-function inicializarTiposConsulta() {
-    return [
-        {
-            id: 'menopausa',
-            nome: 'Menopausa',
-            cor: '#EC4899',
-            pocDefaultIds: ['fsh', 'pressaoarterial', 'perfillipidico'],
-            ativo: true,
-            questionario: [
+        function inicializarTiposConsulta() {
+            return [
+               {
+    id: 'menopausa',
+    nome: 'Menopausa',
+    cor: '#EC4899',
+    pocDefaultIds: ['fsh', 'pressao_arterial', 'perfil_lipidico'],
+    ativo: true,
+    questionario: [
+
         // ══════════════════════════════════════
         // 1. IDENTIFICAÇÃO E ANAMNESE GERAL
         // ══════════════════════════════════════
@@ -2571,7 +2581,7 @@ function showAdminTab(tabName) {
                         <td>${data}</td>
                         <td>${utente?.nome || 'Desconhecido'}</td>
                         <td><span style="color: ${tipo?.cor}">${tipo?.nome || c.tipo}</span></td>
-                        <td><span class="badge badge-${c.estado === 'concluida' ? 'success' : 'warning'}">${c.estado}</span></td>
+                        <td><span class="badge badge-${c.estado === 'concluida' ? 'success' : c.estado === 'anulada' ? 'error' : 'warning'}">${c.estado}</span></td>
                         <td>
                             <button class="btn btn-secondary btn-small" onclick="abrirConsulta('${c.id}')">Abrir</button>
                         </td>
@@ -2737,7 +2747,7 @@ function showAdminTab(tabName) {
                                                 <td>${data}</td>
                                                 <td>${tipo?.nome || c.tipo}</td>
                                                 <td>${c.farmaceutico}</td>
-                                                <td><span class="badge badge-${c.estado === 'concluida' ? 'success' : 'warning'}">${c.estado}</span></td>
+                                                <td><span class="badge badge-${c.estado === 'concluida' ? 'success' : c.estado === 'anulada' ? 'error' : 'warning'}">${c.estado}</span></td>
                                                 <td>
                                                     <button class="btn btn-secondary btn-small" onclick="abrirConsulta('${c.id}')">Ver</button>
                                                 </td>
@@ -2781,7 +2791,7 @@ function showAdminTab(tabName) {
                         <td>${utente?.nome || 'Desconhecido'}</td>
                         <td>${tipo?.nome || c.tipo}</td>
                         <td>${c.farmaceutico}</td>
-                        <td><span class="badge badge-${c.estado === 'concluida' ? 'success' : 'warning'}">${c.estado}</span></td>
+                        <td><span class="badge badge-${c.estado === 'concluida' ? 'success' : c.estado === 'anulada' ? 'error' : 'warning'}">${c.estado}</span></td>
                         <td>
                             <button class="btn btn-secondary btn-small" onclick="abrirConsulta('${c.id}')">Abrir</button>
                         </td>
@@ -2807,6 +2817,8 @@ dermocosmetica: ''
             document.getElementById('consultaStep2').classList.add('hidden');
             document.getElementById('btnAvancar').classList.remove('hidden');
             document.getElementById('btnFinalizar').classList.add('hidden');
+        const btnAnularN = document.getElementById('btnAnularConsulta');
+        if (btnAnularN) btnAnularN.classList.add('hidden');
             
 document.getElementById('consultaUtenteSearch').value = '';
 document.getElementById('consultaUtente').value = '';
@@ -2926,11 +2938,31 @@ function renderQuestionario() {
     const tipo = state.tiposConsulta.find(t => t.id === tipoId);
     const container = document.getElementById('questionarioContent');
 
-    if (!tipo || !tipo.questionario || tipo.questionario.length === 0) {
-        container.innerHTML = '<div class="info-box"><p>Sem questionário configurado. Adicione campos em Administração > Tipos de Consulta.</p></div>';
-        if (tipoId === 'menopausa') {
-            container.innerHTML += buildMRSQuestionario();
+    // Se menopausa sem questionário: tentar injetar base antes de desistir
+    if ((!tipo || !tipo.questionario || tipo.questionario.length === 0) && tipoId === 'menopausa') {
+        const mBase = inicializarTiposConsulta().find(t => t.id === 'menopausa');
+        if (mBase && state.tiposConsulta) {
+            const mIdx = state.tiposConsulta.findIndex(t => t.id === 'menopausa');
+            if (mIdx !== -1) {
+                state.tiposConsulta[mIdx].questionario = mBase.questionario;
+                // Re-obter tipo atualizado
+                const tipoAtualizado = state.tiposConsulta[mIdx];
+                const campos2 = tipoAtualizado.questionario;
+                // Renderizar normalmente abaixo - não return aqui
+            }
         }
+    }
+
+    // Reobter tipo (pode ter sido atualizado acima)
+    const tipoFinal = state.tiposConsulta.find(t => t.id === tipoId);
+
+    if (!tipoFinal || !tipoFinal.questionario || tipoFinal.questionario.length === 0) {
+        if (tipoId === 'menopausa') {
+            // Para menopausa, mostrar SEMPRE o MRS mesmo sem questionário configurado
+            container.innerHTML = buildMRSQuestionario();
+            return;
+        }
+        container.innerHTML = '<div class="info-box"><p>Sem questionário configurado. Adicione campos em <strong>Administração &gt; Tipos de Consulta</strong>.</p></div>';
         return;
     }
 
@@ -2946,7 +2978,7 @@ function renderQuestionario() {
           + '</div>'
         : '';
 
-    const campos = tipo.questionario;
+    const campos = tipoFinal.questionario;
     let html = '';
 
     for (let idx = 0; idx < campos.length; idx++) {
@@ -3462,11 +3494,116 @@ function selecionarSupCatalogo(supId, idx) {
                 createdAt: new Date().toISOString()
             };
             
-            state.consultas.push(consulta);
+            // Modo edição: substituir consulta existente
+            if (state.currentConsulta._editando && state.currentConsulta.id) {
+                consulta.id = state.currentConsulta.id;
+                consulta.createdAt = state.consultas.find(c => c.id === consulta.id)?.createdAt || consulta.createdAt;
+                consulta.anuladaEm = undefined;
+                consulta.anuladaPor = undefined;
+                const idx = state.consultas.findIndex(c => c.id === consulta.id);
+                if (idx !== -1) {
+                    state.consultas[idx] = consulta;
+                } else {
+                    state.consultas.push(consulta);
+                }
+            } else {
+                state.consultas.push(consulta);
+            }
             saveData();
             closeModal('novaConsultaModal');
+            renderConsultas();
+            renderConsultasRecentes();
             updateDashboard();
-            alert('Consulta guardada com sucesso!');
+            alert('✅ Consulta guardada com sucesso!');
+        }
+
+
+
+        function editarConsulta(id) {
+            const consulta = state.consultas.find(c => c.id === id);
+            if (!consulta) return;
+            if (consulta.estado === 'anulada') { alert('Consulta anulada não pode ser editada.'); return; }
+
+            closeModal('fichaUtenteModal');
+
+            // Repor state.currentConsulta com dados existentes
+            state.currentConsulta = {
+                id: consulta.id,
+                utenteNIF: consulta.utenteNIF,
+                tipo: consulta.tipo,
+                tipoConsultaId: consulta.tipo,
+                data: consulta.data,
+                farmaceutico: consulta.farmaceutico,
+                questionario: consulta.questionario ? JSON.parse(JSON.stringify(consulta.questionario)) : {},
+                testes: consulta.testes ? JSON.parse(JSON.stringify(consulta.testes)) : [],
+                suplementos: (consulta.guia && consulta.guia.suplementos) ? JSON.parse(JSON.stringify(consulta.guia.suplementos)) : [],
+                medidas: (consulta.guia && consulta.guia.medidas) ? JSON.parse(JSON.stringify(consulta.guia.medidas)) : [],
+                exames: (consulta.guia && consulta.guia.exames) ? JSON.parse(JSON.stringify(consulta.guia.exames)) : [],
+                observacoes: (consulta.guia && consulta.guia.observacoes) || '',
+                proximaConsulta: (consulta.guia && consulta.guia.proximaConsulta) || null,
+                dermocosmetica: consulta.dermocosmetica || '',
+                _editando: true
+            };
+
+            document.getElementById('consultaModalTitle').textContent = 'Editar Consulta';
+            document.getElementById('consultaStep1').classList.add('hidden');
+            document.getElementById('consultaStep2').classList.remove('hidden');
+            document.getElementById('btnAvancar').classList.add('hidden');
+            document.getElementById('btnFinalizar').classList.remove('hidden');
+
+            // Mostrar botão anular se admin
+            const btnAnularN = document.getElementById('btnAnularConsulta');
+            if (btnAnularN) {
+                if (state.currentUser && state.currentUser.role === 'admin') {
+                    btnAnularN.classList.remove('hidden');
+                    btnAnularN.setAttribute('onclick', "anularConsulta('" + consulta.id + "')");
+                } else {
+                    btnAnularN.classList.add('hidden');
+                }
+            }
+
+            renderQuestionario();
+            renderTestesConsulta();
+            renderGuiaConsulta();
+
+            // Restaurar scores MRS se existirem
+            if (consulta.questionario && consulta.questionario._mrs && consulta.questionario._mrs.scores) {
+                setTimeout(() => {
+                    const scores = consulta.questionario._mrs.scores;
+                    Object.keys(scores).forEach(qid => {
+                        const el = document.querySelector('input[name="mrs_' + qid + '"][value="' + scores[qid] + '"]');
+                        if (el) { el.checked = true; }
+                    });
+                    calcMRSAuto();
+                }, 200);
+            }
+
+            document.getElementById('novaConsultaModal').classList.add('active');
+        }
+
+        function anularConsultaAtual() {
+            const consultaId = state.currentConsulta && state.currentConsulta.id;
+            if (!consultaId) { alert('Guarde a consulta antes de anular.'); return; }
+            anularConsulta(consultaId);
+        }
+
+        function anularConsulta(consultaId) {
+            if (!state.currentUser || state.currentUser.role !== 'admin') {
+                alert('Apenas administradores podem anular consultas.');
+                return;
+            }
+            if (!confirm('Tem a certeza que deseja ANULAR esta consulta?\nEsta ação não pode ser desfeita.')) return;
+            const idx = state.consultas.findIndex(c => c.id === consultaId);
+            if (idx === -1) { alert('Consulta não encontrada.'); return; }
+            state.consultas[idx].estado = 'anulada';
+            state.consultas[idx].anuladaEm = new Date().toISOString();
+            state.consultas[idx].anuladaPor = state.currentUser.nome;
+            saveData();
+            closeModal('novaConsultaModal');
+            renderConsultas();
+            renderConsultasRecentes();
+            updateDashboard();
+            alert('✅ Consulta anulada com sucesso.');
         }
 
         function abrirConsulta(id) {
@@ -3587,6 +3724,17 @@ function selecionarSupCatalogo(supId, idx) {
         + (secoes || '<p style="color:#6b7280;font-size:13px;">Sem dados registados.</p>')
         + '</div>';
 
+    // Botão anular — visível só para admin e só em consultas não anuladas
+    const btnAnular = document.getElementById('btnAnularConsulta');
+    if (btnAnular) {
+        if (state.currentUser && state.currentUser.role === 'admin' && consulta.estado !== 'anulada') {
+            btnAnular.classList.remove('hidden');
+            btnAnular.setAttribute('onclick', "anularConsulta('" + consulta.id + "')");
+        } else {
+            btnAnular.classList.add('hidden');
+        }
+    }
+
     document.getElementById('fichaUtenteModal').classList.add('active');
 }
 
@@ -3608,17 +3756,28 @@ function selecionarSupCatalogo(supId, idx) {
 }
 
         function salvarDadosFarmacia() {
-            state.config.nome = document.getElementById('farmNome').value;
+            state.config.nome     = document.getElementById('farmNome').value;
             state.config.diretora = document.getElementById('farmDiretora').value;
-            state.config.morada = document.getElementById('farmMorada').value;
+            state.config.morada   = document.getElementById('farmMorada').value;
             state.config.telefone = document.getElementById('farmTelefone').value;
-            state.config.email = document.getElementById('farmEmail').value;
-            state.config.website = document.getElementById('farmWebsite').value;
-            
-            document.querySelector('.logo #farmNome').textContent = state.config.nome;
-            saveData();
-            alert('Dados da farmácia atualizados com sucesso!');
-        }
+            state.config.email    = document.getElementById('farmEmail').value;
+            state.config.website  = document.getElementById('farmWebsite').value;
+
+            if (typeof firebaseInitialized !== 'undefined' && firebaseInitialized && db) {
+                db.collection('config').doc('farmacia').set(state.config)
+                    .then(() => {
+                        saveData();
+                        alert('✅ Dados da farmácia guardados no Firebase!');
+                    })
+                    .catch(err => {
+                        saveData();
+                        alert('⚠️ Guardado localmente. Erro Firebase: ' + err.message);
+                    });
+            } else {
+                saveData();
+                alert('✅ Dados guardados localmente (Firebase não disponível).');
+            }
+                }
 
         function renderTiposConsulta() {
             const container = document.getElementById('tiposConsultaList');
@@ -4639,19 +4798,9 @@ function toggleSuplementoAtivo(id) {
 function apagarSuplemento(id) {
     const sup = state.suplementos.find(s => s.id === id);
     if (!sup) return;
-    if (!confirm(`Apagar ${sup.nome} permanentemente? Ação não pode ser desfeita.`)) return;
-    
-    // Remover do array local
+    if (!confirm(`Apagar "${sup.nome}" permanentemente?\nEsta ação não pode ser desfeita.`)) return;
     state.suplementos = state.suplementos.filter(s => s.id !== id);
-    
-    // Apagar do Firebase diretamente
-    if (firebaseInitialized && db) {
-        db.collection('suplementos').doc(id).delete()
-            .then(() => console.log('Suplemento apagado do Firebase'))
-            .catch(err => console.error('Erro ao apagar do Firebase:', err));
-    }
-    
-    saveData();  // Sincroniza o resto
+    saveData();
     renderSuplementosAdmin();
 }
 function renderSuplementosView() {
@@ -4994,7 +5143,7 @@ var MRS_QUESTIONS = [
     { id:'mrs6',  label:'Irritabilidade (nervosismo, tensão, agressividade)',            domain:'psych'   },
     { id:'mrs7',  label:'Ansiedade (inquietação, ataques de pânico)',                    domain:'psych'   },
     { id:'mrs8',  label:'Exaustão física e mental (fadiga, memória, concentração)',      domain:'psych'   },
-    { id:'mrs9',  label:'Dificuldades Sexuais (líbido, atividade sexual)',               domain:'uro'     },
+    { id:'mrs9',  label:'Problemas sexuais (líbido, atividade sexual)',                  domain:'uro'     },
     { id:'mrs10', label:'Problemas urinários (urgência, perdas, infeções recorrentes)',  domain:'uro'     },
     { id:'mrs11', label:'Secura vaginal / desconforto nas relações sexuais',             domain:'uro'     }
 ];
