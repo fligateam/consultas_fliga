@@ -900,6 +900,9 @@
                 <div class="search-box">
                     <span class="search-icon">🔍</span>
                     <input type="text" class="search-input" id="searchUtente" placeholder="Pesquisar por nome ou NIF..." oninput="filterUtentes()">
+                    <label style="position:absolute;right:1rem;top:50%;transform:translateY(-50%);font-size:0.8rem;color:var(--color-text-secondary);display:flex;align-items:center;gap:0.4rem;cursor:pointer;">
+                        <input type="checkbox" id="mostrarAnulados" onchange="filterUtentes()"> Mostrar anulados
+                    </label>
                 </div>
 
                 <div class="card">
@@ -912,6 +915,7 @@
                                     <th>Data Nascimento</th>
                                     <th>Contacto</th>
                                     <th>Consultas</th>
+                                    <th>Estado</th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
@@ -1012,7 +1016,7 @@
                             <div class="grid-2">
                                 <div class="form-group">
                                     <label class="form-label">Nome da Farmácia</label>
-                                    <input type="text" id="farmNome" class="form-input" value="Farmácia da Liga">
+                                    <input type="text" id="farmNomeInput" class="form-input" value="Farmácia da Liga">
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Diretora Técnica</label>
@@ -1037,7 +1041,11 @@
                                     <input type="text" id="farmWebsite" class="form-input" value="www.farmacialiga.pt">
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-primary" onclick="salvarDadosFarmacia()">Guardar Alterações</button>
+                            <div class="form-group">
+                                <label class="form-label">🃏 URL dos Flashcards <span style="font-size:0.8em;color:var(--color-text-secondary)">(botão no final de cada consulta)</span></label>
+                                <input type="url" id="farmFlashcardsUrl" class="form-input" placeholder="https://flashcards.exemplo.com">
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="salvarDadosFarmacia()">💾 Guardar Alterações</button>
                         </form>
                     </div>
                 </div>
@@ -1201,6 +1209,7 @@
                 <div id="fichaUtenteContent"></div>
             </div>
             <div class="modal-footer">
+                <button id="btnAnularUtenteModal" class="btn btn-danger hidden" onclick="anularUtenteAtual()" style="margin-right:auto;">🚫 Anular Utente</button>
                 <button class="btn btn-secondary" onclick="closeModal('fichaUtenteModal')">Fechar</button>
             </div>
         </div>
@@ -1320,6 +1329,7 @@
                 <button id="btnAvancar" class="btn btn-primary" onclick="avancarConsulta()">Avançar</button>
                 <button id="btnFinalizar" class="btn btn-primary hidden" onclick="finalizarConsulta()">Finalizar & Guardar</button>
                     <button id="btnAnularConsulta" class="btn btn-danger hidden" onclick="anularConsultaAtual()" style="background:#dc2626;color:#fff;border:none;">🚫 Anular Consulta</button>
+                    <a id="btnFlashcardsConsulta" href="#" target="_blank" class="btn hidden" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;text-decoration:none;display:none;align-items:center;gap:0.4rem;">🃏 Flashcards</a>
             </div>
         </div>
     </div>
@@ -1703,7 +1713,8 @@ suplementos: [],
                 morada: 'Rua da Saúde, 123, Vila Nova de Gaia',
                 telefone: '223 456 789',
                 email: 'geral@farmacialiga.pt',
-                website: 'www.farmacialiga.pt'
+                website: 'www.farmacialiga.pt',
+                flashcardsUrl: ''
             },
             protocolos: [],
             lastSync: null,
@@ -1802,7 +1813,11 @@ suplementos: [],
         
         // Processar config
         if (configSnap.exists) {
-            state.config = configSnap.data();
+            const remoteConfig = configSnap.data();
+            // Preservar flashcardsUrl se não vier do Firebase
+            state.config = Object.assign({ flashcardsUrl: '' }, state.config, remoteConfig);
+            // Actualizar nome no header
+            if (state.config.nome) document.getElementById('farmNome').textContent = state.config.nome;
         }
         
         // Processar protocolos
@@ -2014,7 +2029,11 @@ state.suplementos.forEach(sup => {
                     state.testesPOC = data.testesPOC || inicializarTestesPOC();
             state.suplementos = data.suplementos || []; 
                     state.utilizadores = data.utilizadores || state.utilizadores;
-                    state.config = data.config || state.config;
+                    state.config = Object.assign({ flashcardsUrl: '' }, state.config, data.config || {});
+                    if (state.config.nome) {
+                        const el = document.getElementById('farmNome');
+                        if (el) el.textContent = state.config.nome;
+                    }
                     state.protocolos = data.protocolos || [];
                     state.lastSync = data.lastSync || null;
                     state.syncStatus = 'local';
@@ -2602,16 +2621,21 @@ function showAdminTab(tabName) {
             tbody.innerHTML = state.utentes.map(u => {
                 const idade = new Date().getFullYear() - new Date(u.dataNascimento).getFullYear();
                 const nConsultas = state.consultas.filter(c => c.utenteNIF === u.nif).length;
+                const anulado = u.estado === 'anulado';
                 
                 return `
-                    <tr>
+                    <tr style="${anulado ? 'opacity:0.55;' : ''}">
                         <td>${u.nif}</td>
                         <td>${u.nome} (${idade} anos)</td>
                         <td>${new Date(u.dataNascimento).toLocaleDateString('pt-PT')}</td>
                         <td>${u.contacto}</td>
                         <td>${nConsultas}</td>
+                        <td><span class="badge badge-${anulado ? 'error' : 'success'}">${anulado ? 'Anulado' : 'Ativo'}</span></td>
                         <td>
                             <button class="btn btn-secondary btn-small" onclick="verFichaUtente('${u.nif}')">Ver Ficha</button>
+                            ${(state.currentUser && state.currentUser.role === 'admin') ? `
+                            <button class="btn btn-${anulado ? 'secondary' : 'danger'} btn-small" onclick="anularUtente('${u.nif}')">${anulado ? '↩ Reativar' : '🚫 Anular'}</button>
+                            ` : ''}
                         </td>
                     </tr>
                 `;
@@ -2620,11 +2644,15 @@ function showAdminTab(tabName) {
 
         function filterUtentes() {
             const search = document.getElementById('searchUtente').value.toLowerCase();
+            const mostrarAnulados = document.getElementById('mostrarAnulados') && document.getElementById('mostrarAnulados').checked;
             const rows = document.querySelectorAll('#utentesTableBody tr');
             
             rows.forEach(row => {
                 const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(search) ? '' : 'none';
+                const isAnulado = row.style.opacity === '0.55';
+                const matchSearch = text.includes(search);
+                const matchAnulado = mostrarAnulados || !isAnulado;
+                row.style.display = (matchSearch && matchAnulado) ? '' : 'none';
             });
         }
 
@@ -2684,8 +2712,10 @@ function showAdminTab(tabName) {
             
             const consultasUtente = state.consultas.filter(c => c.utenteNIF === nif).reverse();
             const idade = new Date().getFullYear() - new Date(utente.dataNascimento).getFullYear();
+            const anulado = utente.estado === 'anulado';
             
             const html = `
+                ${anulado ? '<div class="info-box" style="background:#fee2e2;border-left-color:#ef4444;margin-bottom:1rem;"><div class="info-box-title" style="color:#991b1b">🚫 Utente Anulado</div><div class="info-box-text" style="color:#991b1b">Anulado em ${utente.anuladoEm ? new Date(utente.anuladoEm).toLocaleDateString(\'pt-PT\') : \'—\'} por ${utente.anuladoPor || \'—\'}</div></div>' : ''}
                 <div class="card">
                     <h4 class="mb-2">Dados Pessoais</h4>
                     <div class="grid-2">
@@ -2750,6 +2780,7 @@ function showAdminTab(tabName) {
                                                 <td><span class="badge badge-${c.estado === 'concluida' ? 'success' : c.estado === 'anulada' ? 'error' : 'warning'}">${c.estado}</span></td>
                                                 <td>
                                                     <button class="btn btn-secondary btn-small" onclick="abrirConsulta('${c.id}')">Ver</button>
+                                                    ${state.currentUser && state.currentUser.role === 'admin' && c.estado !== 'anulada' ? `<button class="btn btn-danger btn-small" onclick="anularConsulta('${c.id}')">Anular</button>` : ''}
                                                 </td>
                                             </tr>
                                         `;
@@ -2762,6 +2793,20 @@ function showAdminTab(tabName) {
             `;
             
             document.getElementById('fichaUtenteContent').innerHTML = html;
+
+            // Botão anular utente no footer do modal
+            const btnAnularUt = document.getElementById('btnAnularUtenteModal');
+            if (btnAnularUt) {
+                if (state.currentUser && state.currentUser.role === 'admin') {
+                    btnAnularUt.classList.remove('hidden');
+                    btnAnularUt.textContent = anulado ? '↩ Reativar Utente' : '🚫 Anular Utente';
+                    btnAnularUt.className = 'btn btn-' + (anulado ? 'secondary' : 'danger');
+                    btnAnularUt.setAttribute('onclick', "anularUtente('" + nif + "')");
+                } else {
+                    btnAnularUt.classList.add('hidden');
+                }
+            }
+
             document.getElementById('fichaUtenteModal').classList.add('active');
         }
 
@@ -3514,7 +3559,15 @@ function selecionarSupCatalogo(supId, idx) {
             renderConsultas();
             renderConsultasRecentes();
             updateDashboard();
-            alert('✅ Consulta guardada com sucesso!');
+            // Show flashcards button if URL configured
+            const fcUrl = state.config && state.config.flashcardsUrl;
+            if (fcUrl) {
+                if (confirm('✅ Consulta guardada com sucesso!\n\n🃏 Deseja abrir os Flashcards agora?')) {
+                    window.open(fcUrl, '_blank');
+                }
+            } else {
+                alert('✅ Consulta guardada com sucesso!');
+            }
         }
 
 
@@ -3606,6 +3659,47 @@ function selecionarSupCatalogo(supId, idx) {
             alert('✅ Consulta anulada com sucesso.');
         }
 
+        // ── Anular / Reativar Utente ──────────────────────────────
+        function anularUtente(nif) {
+            if (!state.currentUser || state.currentUser.role !== 'admin') {
+                alert('Apenas administradores podem anular utentes.');
+                return;
+            }
+            const utente = state.utentes.find(u => u.nif === nif);
+            if (!utente) return;
+
+            const jaAnulado = utente.estado === 'anulado';
+            const acao = jaAnulado ? 'REATIVAR' : 'ANULAR';
+            if (!confirm(`Tem a certeza que deseja ${acao} o utente "${utente.nome}"?\n${jaAnulado ? '' : 'O utente ficará inativo mas os dados são preservados.'}`)) return;
+
+            if (jaAnulado) {
+                delete utente.estado;
+                delete utente.anuladoEm;
+                delete utente.anuladoPor;
+            } else {
+                utente.estado = 'anulado';
+                utente.anuladoEm = new Date().toISOString();
+                utente.anuladoPor = state.currentUser.nome;
+            }
+
+            // Persistir no Firebase
+            if (firebaseInitialized && db) {
+                db.collection('utentes').doc(nif).set(utente)
+                    .catch(err => console.warn('Firebase utente update:', err));
+            }
+
+            saveData();
+            closeModal('fichaUtenteModal');
+            renderUtentes();
+            alert(`✅ Utente ${jaAnulado ? 'reativado' : 'anulado'} com sucesso.`);
+        }
+
+        function anularUtenteAtual() {
+            // chamado pelo botão no modal footer — obtém NIF do conteúdo
+            const btn = document.getElementById('btnAnularUtenteModal');
+            if (btn) btn.onclick && btn.onclick();
+        }
+
         function abrirConsulta(id) {
     const consulta = state.consultas.find(c => c.id === id);
     if (!consulta) return;
@@ -3654,14 +3748,31 @@ function selecionarSupCatalogo(supId, idx) {
             + '</div></div>';
     }
 
-    // Testes
+    // Testes POC com valores de referência
     if (consulta.testes && consulta.testes.length > 0) {
         const tRows = consulta.testes.map(t => {
+            const testeDef = state.testesPOC.find(td => td.id === t.testePOCId);
             const vals = t.valores
                 ? Object.entries(t.valores)
                     .filter(([k, v]) => v)
-                    .map(([k, v]) => '<span style="background:#f3f4f6;padding:2px 8px;border-radius:4px;font-size:11px;">'
-                        + k + ': <strong>' + v + '</strong></span>')
+                    .map(([k, v]) => {
+                        // find reference range for this field
+                        const campoDef = testeDef && testeDef.campos && testeDef.campos.find(c => c.nome === k);
+                        let refBadge = '';
+                        if (campoDef && campoDef.min != null && campoDef.max != null) {
+                            const num = parseFloat(v);
+                            if (!isNaN(num)) {
+                                const ok = num >= campoDef.min && num <= campoDef.max;
+                                const refColor = ok ? '#065f46' : '#991b1b';
+                                const refBg = ok ? '#d1fae5' : '#fee2e2';
+                                refBadge = '<span style="background:' + refBg + ';color:' + refColor + ';padding:1px 6px;border-radius:4px;font-size:10px;margin-left:4px;">'
+                                    + (ok ? '✓ Normal' : '⚠ Fora ref.')
+                                    + '</span><span style="color:#9ca3af;font-size:10px;margin-left:3px;">ref: ' + campoDef.min + '–' + campoDef.max + ' ' + (campoDef.unidade || '') + '</span>';
+                            }
+                        }
+                        return '<span style="background:#f3f4f6;padding:2px 8px;border-radius:4px;font-size:11px;">'
+                            + k + ': <strong>' + v + '</strong>' + (campoDef ? ' ' + (campoDef.unidade||'') : '') + refBadge + '</span>';
+                    })
                     .join(' ')
                 : '';
             return '<li style="margin-bottom:6px"><strong>' + t.nome + '</strong> ' + vals + '</li>';
@@ -3673,29 +3784,35 @@ function selecionarSupCatalogo(supId, idx) {
     // Suplementos
     if (consulta.guia && consulta.guia.suplementos && consulta.guia.suplementos.length > 0) {
         const sRows = consulta.guia.suplementos.map(s =>
-            '<li style="margin-bottom:4px"><strong>' + s.nome + '</strong>'
-            + (s.posologia ? ' · ' + s.posologia : '')
-            + (s.duracao   ? ' · ' + s.duracao   : '')
+            '<li style="margin-bottom:6px"><strong>' + s.nome + '</strong>'
+            + (s.posologia ? '<br><span style="color:#6b7280;font-size:12px;">📋 Posologia: ' + s.posologia + '</span>' : '')
+            + (s.duracao   ? '<br><span style="color:#6b7280;font-size:12px;">⏱ Duração: ' + s.duracao + '</span>' : '')
+            + (s.indicacao ? '<br><span style="color:#6b7280;font-size:12px;">💡 Indicação: ' + s.indicacao + '</span>' : '')
             + '</li>'
         ).join('');
-        secoes += '<h4 style="margin:14px 0 6px;color:#047857">💊 Suplementação</h4>'
+        secoes += '<h4 style="margin:14px 0 6px;color:#047857">💊 Suplementação Recomendada</h4>'
             + '<ul style="font-size:13px;padding-left:18px;">' + sRows + '</ul>';
     }
 
-    // Medidas
+    // Medidas Farmacológicas e Não-Farmacológicas
     if (consulta.guia && consulta.guia.medidas && consulta.guia.medidas.length > 0) {
         secoes += '<h4 style="margin:14px 0 6px;color:#047857">🥗 Medidas Não-Farmacológicas</h4>'
             + '<ul style="font-size:13px;padding-left:18px;">'
-            + consulta.guia.medidas.map(m => '<li>' + m + '</li>').join('')
+            + consulta.guia.medidas.map(m => '<li style="margin-bottom:4px">' + m + '</li>').join('')
             + '</ul>';
     }
 
-    // Exames
+    // Exames / Encaminhamento
     if (consulta.guia && consulta.guia.exames && consulta.guia.exames.length > 0) {
-        secoes += '<h4 style="margin:14px 0 6px;color:#047857">🔬 Exames Sugeridos</h4>'
-            + '<ul style="font-size:13px;padding-left:18px;">'
-            + consulta.guia.exames.map(e => '<li>' + (e.nome || e) + '</li>').join('')
-            + '</ul>';
+        const exRows = consulta.guia.exames.map(e => {
+            const nome = e.nome || e;
+            const urg = e.urgencia === 'urgente' ? '<span style="background:#fee2e2;color:#991b1b;padding:1px 6px;border-radius:4px;font-size:10px;margin-left:4px;">URGENTE</span>' : '';
+            const lab = e.laboratorio ? '<span style="color:#6b7280;font-size:12px;"> · ' + e.laboratorio + '</span>' : '';
+            const ind = e.indicacao ? '<br><span style="color:#6b7280;font-size:12px;">Indicação: ' + e.indicacao + '</span>' : '';
+            return '<li style="margin-bottom:6px">' + nome + urg + lab + ind + '</li>';
+        }).join('');
+        secoes += '<h4 style="margin:14px 0 6px;color:#047857">🔬 Exames e Encaminhamento</h4>'
+            + '<ul style="font-size:13px;padding-left:18px;">' + exRows + '</ul>';
     }
 
     if (consulta.guia && consulta.guia.observacoes) {
@@ -3704,10 +3821,16 @@ function selecionarSupCatalogo(supId, idx) {
     }
 
     if (consulta.guia && consulta.guia.proximaConsulta) {
-        secoes += '<p style="margin-top:12px;font-size:13px;"><strong>📅 Próxima consulta:</strong> '
+        secoes += '<p style="margin-top:12px;font-size:13px;background:#d1fae5;padding:8px 12px;border-radius:8px;"><strong>📅 Próxima consulta:</strong> '
             + new Date(consulta.guia.proximaConsulta).toLocaleDateString('pt-PT')
             + '</p>';
     }
+
+    // Botão Flashcards
+    const flashUrl = state.config && state.config.flashcardsUrl;
+    const flashBtn = flashUrl
+        ? '<a href="' + flashUrl + '" target="_blank" class="btn btn-primary btn-small" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);text-decoration:none;display:inline-block;margin-top:10px;">🃏 Abrir Flashcards</a>'
+        : '';
 
     document.getElementById('fichaUtenteContent').innerHTML =
         '<div style="padding:8px;">'
@@ -3716,24 +3839,21 @@ function selecionarSupCatalogo(supId, idx) {
         + '<h3 style="margin:0;font-size:16px;">' + (utente ? utente.nome : 'Utente') + '</h3>'
         + '<p style="margin:3px 0;color:#6b7280;font-size:13px;">'
         + (tipo ? tipo.nome : consulta.tipo) + ' · ' + data + ' · ' + consulta.farmaceutico
+        + (consulta.estado === 'anulada' ? ' <span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">ANULADA</span>' : '')
         + '</p>'
         + '</div>'
+        + '<div style="display:flex;gap:8px;align-items:center;">'
         + '<button class="btn btn-primary btn-small" onclick="gerarGuiaPDF(\'' + consulta.id + '\')">⬇️ Exportar PDF</button>'
+        + flashBtn
+        + '</div>'
         + '</div>'
         + '<hr style="margin:0 0 12px;">'
         + (secoes || '<p style="color:#6b7280;font-size:13px;">Sem dados registados.</p>')
         + '</div>';
 
-    // Botão anular — visível só para admin e só em consultas não anuladas
-    const btnAnular = document.getElementById('btnAnularConsulta');
-    if (btnAnular) {
-        if (state.currentUser && state.currentUser.role === 'admin' && consulta.estado !== 'anulada') {
-            btnAnular.classList.remove('hidden');
-            btnAnular.setAttribute('onclick', "anularConsulta('" + consulta.id + "')");
-        } else {
-            btnAnular.classList.add('hidden');
-        }
-    }
+    // Botão anular consulta no footer — visível só para admin e só em consultas não anuladas
+    const btnAnularUtenteModal = document.getElementById('btnAnularUtenteModal');
+    if (btnAnularUtenteModal) btnAnularUtenteModal.classList.add('hidden');
 
     document.getElementById('fichaUtenteModal').classList.add('active');
 }
@@ -3742,12 +3862,13 @@ function selecionarSupCatalogo(supId, idx) {
       function renderAdmin() {
     if (state.currentUser.role !== 'admin') return;
     
-    document.getElementById('farmNome').value = state.config.nome;
-    document.getElementById('farmDiretora').value = state.config.diretora;
-    document.getElementById('farmMorada').value = state.config.morada;
-    document.getElementById('farmTelefone').value = state.config.telefone;
-    document.getElementById('farmEmail').value = state.config.email;
-    document.getElementById('farmWebsite').value = state.config.website;
+    document.getElementById('farmNomeInput').value = state.config.nome || '';
+    document.getElementById('farmDiretora').value = state.config.diretora || '';
+    document.getElementById('farmMorada').value = state.config.morada || '';
+    document.getElementById('farmTelefone').value = state.config.telefone || '';
+    document.getElementById('farmEmail').value = state.config.email || '';
+    document.getElementById('farmWebsite').value = state.config.website || '';
+    document.getElementById('farmFlashcardsUrl').value = state.config.flashcardsUrl || '';
 
     renderTiposConsulta();
     renderTestesPOC();
@@ -3756,12 +3877,15 @@ function selecionarSupCatalogo(supId, idx) {
 }
 
         function salvarDadosFarmacia() {
-            state.config.nome     = document.getElementById('farmNome').value;
+            state.config.nome     = document.getElementById('farmNomeInput').value;
             state.config.diretora = document.getElementById('farmDiretora').value;
             state.config.morada   = document.getElementById('farmMorada').value;
             state.config.telefone = document.getElementById('farmTelefone').value;
             state.config.email    = document.getElementById('farmEmail').value;
             state.config.website  = document.getElementById('farmWebsite').value;
+            state.config.flashcardsUrl = document.getElementById('farmFlashcardsUrl').value;
+            // Atualizar nome no header
+            document.getElementById('farmNome').textContent = state.config.nome;
 
             if (typeof firebaseInitialized !== 'undefined' && firebaseInitialized && db) {
                 db.collection('config').doc('farmacia').set(state.config)
@@ -4320,7 +4444,7 @@ function selecionarSupCatalogo(supId, idx) {
             <td><span class="badge badge-${u.ativo ? 'success' : 'error'}">${u.ativo ? 'Ativo' : 'Inativo'}</span></td>
             <td>
                 <button class="btn btn-secondary btn-small" onclick="editarUtilizador('${u.operador}')">Editar</button>
-                <button class="btn btn-secondary btn-small" onclick="toggleUtilizadorAtivo('${u.operador}')">${u.ativo ? 'Desativar' : 'Ativar'}</button>
+                <button class="btn btn-secondary btn-small" onclick="toggleUserAtivo('${u.operador}')">${u.ativo ? 'Desativar' : 'Ativar'}</button>
                 ${u.operador !== state.currentUser.operador ? `
                 <button class="btn btn-danger btn-small" onclick="apagarUtilizador('${u.operador}')">Apagar</button>
                 ` : '<span class="text-secondary text-small">(tu própria)</span>'}
@@ -5075,12 +5199,21 @@ function gerarGuiaPDF(consultaId) {
         y += 2;
     }
 
-    // Testes POC
+    // Testes POC com valores de referência
     if (consulta.testes&&consulta.testes.length>0) {
         addSection('Testes POC');
         consulta.testes.forEach(function(t){
             addText('• '+t.nome, true, 18);
-            if (t.valores) Object.entries(t.valores).filter(function(e){return e[1];}).forEach(function(e){ addText('  '+e[0]+': '+e[1], false, 24, 9); });
+            const testeDef = state.testesPOC && state.testesPOC.find(function(td){return td.id===t.testePOCId;});
+            if (t.valores) Object.entries(t.valores).filter(function(e){return e[1];}).forEach(function(e){
+                const campoDef = testeDef && testeDef.campos && testeDef.campos.find(function(c){return c.nome===e[0];});
+                let refTxt = '';
+                if (campoDef && campoDef.min != null && campoDef.max != null) {
+                    const num = parseFloat(e[1]);
+                    if (!isNaN(num)) refTxt = ' [ref: '+campoDef.min+'–'+campoDef.max+(campoDef.unidade?' '+campoDef.unidade:'')+']'+(num>=campoDef.min&&num<=campoDef.max?' ✓':' ⚠ fora ref.');
+                }
+                addText('  '+e[0]+': '+e[1]+refTxt, false, 24, 9);
+            });
         });
         y += 2;
     }
@@ -5106,8 +5239,13 @@ function gerarGuiaPDF(consultaId) {
 
     // Exames
     if (consulta.guia&&consulta.guia.exames&&consulta.guia.exames.length>0) {
-        addSection('Exames Sugeridos');
-        consulta.guia.exames.forEach(function(e){ addText('• '+(e.nome||e), false, 18, 9); });
+        addSection('Exames e Encaminhamento');
+        consulta.guia.exames.forEach(function(e){
+            const urg = e.urgencia === 'urgente' ? ' [URGENTE]' : '';
+            addText('• '+(e.nome||e)+urg, false, 18, 9);
+            if (e.laboratorio) addText('  Laboratório: '+e.laboratorio, false, 24, 8.5);
+            if (e.indicacao) addText('  Indicação: '+e.indicacao, false, 24, 8.5);
+        });
         y += 2;
     }
 
@@ -5122,10 +5260,15 @@ function gerarGuiaPDF(consultaId) {
 
     // Footer
     var pages = doc.internal.getNumberOfPages();
+    var flashcardsUrlPDF = (state.config && state.config.flashcardsUrl) || '';
     for (var i=1; i<=pages; i++) {
         doc.setPage(i);
         doc.setFontSize(7.5); doc.setTextColor(150);
-        doc.text(((state.config&&state.config.nome)||'Farmácia da Liga')+' · '+((state.config&&state.config.morada)||'Vila Nova de Gaia')+' · Pág '+i+'/'+pages, W/2, 292, {align:'center'});
+        doc.text(((state.config&&state.config.nome)||'Farmácia da Liga')+' · '+((state.config&&state.config.morada)||'Vila Nova de Gaia')+' · Pág '+i+'/'+pages, W/2, 289, {align:'center'});
+        if (flashcardsUrlPDF) {
+            doc.setFontSize(7); doc.setTextColor(109,40,217);
+            doc.text('🃏 Flashcards: '+flashcardsUrlPDF, W/2, 293, {align:'center'});
+        }
         doc.setTextColor(30,30,30);
     }
 
@@ -5133,130 +5276,7 @@ function gerarGuiaPDF(consultaId) {
     var dataFile = new Date(consulta.data).toLocaleDateString('pt-PT').replace(/\//g,'-');
     doc.save('Guia_'+nomeFile+'_'+consulta.tipo+'_'+dataFile+'.pdf');
 }
-// MRS — Menopause Rating Scale
-var MRS_QUESTIONS = [
-    { id:'mrs1',  label:'Ondas de calor / suores noturnos',                              domain:'somatic' },
-    { id:'mrs2',  label:'Desconforto cardíaco (palpitações, ritmo irregular)',           domain:'somatic' },
-    { id:'mrs3',  label:'Perturbações do sono (adormecer, manter, acordar cedo)',        domain:'somatic' },
-    { id:'mrs4',  label:'Dores articulares e/ou musculares',                             domain:'somatic' },
-    { id:'mrs5',  label:'Humor deprimido (tristeza, choro, desmotivação)',               domain:'psych'   },
-    { id:'mrs6',  label:'Irritabilidade (nervosismo, tensão, agressividade)',            domain:'psych'   },
-    { id:'mrs7',  label:'Ansiedade (inquietação, ataques de pânico)',                    domain:'psych'   },
-    { id:'mrs8',  label:'Exaustão física e mental (fadiga, memória, concentração)',      domain:'psych'   },
-    { id:'mrs9',  label:'Problemas sexuais (líbido, atividade sexual)',                  domain:'uro'     },
-    { id:'mrs10', label:'Problemas urinários (urgência, perdas, infeções recorrentes)',  domain:'uro'     },
-    { id:'mrs11', label:'Secura vaginal / desconforto nas relações sexuais',             domain:'uro'     }
-];
-
-function buildMRSQuestionario() {
-    const rows = MRS_QUESTIONS.map((q, i) => {
-        const cells = [0,1,2,3,4].map(v =>
-            '<td style="text-align:center;padding:6px;width:52px;">'
-          + '<input type="radio" name="mrs_' + q.id + '" value="' + v + '"'
-          + ' style="width:17px;height:17px;accent-color:#9d174d;cursor:pointer;"'
-          + ' onchange="calcMRSAuto()"></td>'
-        ).join('');
-        return '<tr style="border-bottom:1px solid #fce7f3;">'
-          + '<td style="padding:7px 6px;font-size:12px;vertical-align:middle;">' + (i+1) + '. ' + q.label + '</td>'
-          + cells + '</tr>';
-    }).join('');
-    const headers = [0,1,2,3,4].map(v =>
-        '<th style="text-align:center;padding:8px;background:#fce7f3;color:#9d174d;border-bottom:2px solid #f9a8d4;width:52px;">' + v + '</th>'
-    ).join('');
-    return '<div style="background:#fdf4f9;border:1px solid #f9a8d4;border-radius:10px;padding:16px;margin-top:16px;">'
-      + '<h4 style="color:#9d174d;margin-bottom:6px;">📊 Escala MRS (Menopause Rating Scale)</h4>'
-      + '<p style="font-size:11px;color:#6b7280;margin-bottom:10px;">0 = Sem sintomas · 1 = Ligeiro · 2 = Moderado · 3 = Grave · 4 = Muito grave</p>'
-      + '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">'
-      + '<thead><tr>'
-      + '<th style="text-align:left;padding:8px;background:#fce7f3;color:#9d174d;border-bottom:2px solid #f9a8d4;">Sintoma</th>'
-      + headers + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
-      + '<div id="mrsScoreBox" style="display:none;margin-top:12px;padding:12px;background:#fff;border-radius:8px;border:1px solid #f9a8d4;">'
-      +   '<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">'
-      +     '<div><span style="font-size:11px;color:#6b7280">Score Total</span><br>'
-      +       '<strong style="font-size:24px;color:#9d174d" id="mrsScoreTotal">0</strong>'
-      +       '<span style="font-size:11px;color:#6b7280">/44</span></div>'
-      +     '<div id="mrsSeverityBadge"></div>'
-      +     '<div style="flex:1;font-size:12px;color:#6b7280;" id="mrsRecomBox"></div>'
-      +   '</div>'
-      +   '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;font-size:12px;" id="mrsSubScores"></div>'
-      + '</div>'
-      + '<div id="mrsAlertas"></div>'
-      + '</div>';
-}
-
-function calcMRSAuto() {
-    let total = 0;
-    const sub = { somatic:0, psych:0, uro:0 };
-    const scores = {};
-    MRS_QUESTIONS.forEach(q => {
-        const el = document.querySelector('input[name="mrs_' + q.id + '"]:checked');
-        if (el) {
-            const v = parseInt(el.value);
-            scores[q.id] = v;
-            total += v;
-            sub[q.domain] += v;
-        }
-    });
-    if (Object.keys(scores).length === 0) return;
-    if (state.currentConsulta) {
-        state.currentConsulta._mrsDraft = { total, sub, scores };
-    }
-
-    let sevStyle, sevLabel, recom;
-    if      (total <= 4)  { sevStyle = 'background:#d1fae5;color:#065f46'; sevLabel = 'Sem / Mínima sintomatologia'; recom = 'Medidas preventivas de estilo de vida.'; }
-    else if (total <= 8)  { sevStyle = 'background:#fef9c3;color:#854d0e'; sevLabel = 'Sintomatologia ligeira';       recom = 'Suplementação preventiva. Reavaliação em 3 meses.'; }
-    else if (total <= 15) { sevStyle = 'background:#ffedd5;color:#9a3412'; sevLabel = 'Sintomatologia moderada';      recom = 'Suplementação ativa. Considerar referenciação médica.'; }
-    else                  { sevStyle = 'background:#fee2e2;color:#991b1b'; sevLabel = 'Sintomatologia grave';          recom = 'Referenciação médica urgente.'; }
-
-    const box = document.getElementById('mrsScoreBox');
-    if (!box) return;
-    box.style.display = 'block';
-    document.getElementById('mrsScoreTotal').textContent = total;
-
-    const badge = document.getElementById('mrsSeverityBadge');
-    badge.setAttribute('style', 'padding:5px 14px;border-radius:999px;font-size:12px;font-weight:700;' + sevStyle);
-    badge.textContent = sevLabel;
-
-    document.getElementById('mrsRecomBox').textContent = recom;
-    document.getElementById('mrsSubScores').innerHTML =
-        '<div style="background:#fdf4f9;padding:6px 10px;border-radius:6px;">Somático: <strong>' + sub.somatic + '</strong>/20</div>'
-      + '<div style="background:#fdf4f9;padding:6px 10px;border-radius:6px;">Psicológico: <strong>' + sub.psych + '</strong>/16</div>'
-      + '<div style="background:#fdf4f9;padding:6px 10px;border-radius:6px;">Urogenital: <strong>' + sub.uro + '</strong>/12</div>';
-
-    const utente = state.utentes && state.utentes.find(u => u.nif === (state.currentConsulta && state.currentConsulta.utenteNIF));
-    const alertas = [];
-    if (utente) {
-        const pat = ((utente.patologias || []).join(' ')).toLowerCase();
-        const med = ((utente.medicacao  || []).join(' ')).toLowerCase();
-        const al  = ((utente.alergias   || []).join(' ')).toLowerCase();
-        if (pat.includes('mama') || pat.includes('cancro') || pat.includes('neoplasia'))
-            alertas.push('Antecedente neoplásico — evitar isoflavonas / fitoestrogénios sem aval médico.');
-        if (pat.includes('trombose') || pat.includes('avc') || pat.includes('embolia'))
-            alertas.push('Tromboembolismo/AVC — precaução com Ómega-3 em dose alta e Vitamina E.');
-        if (med.includes('varfarina') || med.includes('anticoagulante') || med.includes('rivaroxabano'))
-            alertas.push('Anticoagulante em curso — Ómega-3 com cautela; isoflavonas com precaução.');
-        if (al.includes('soja'))
-            alertas.push('Alergia à soja — verificar origem das isoflavonas.');
-    }
-    document.getElementById('mrsAlertas').innerHTML = alertas.length
-        ? '<div style="background:#fff7ed;border:1px solid #fb923c;border-radius:8px;padding:10px;margin-top:8px;font-size:12px;color:#9a3412;">'
-          + '<strong>Alertas clínicos automáticos</strong>'
-          + '<ul style="margin:4px 0 0 14px;">' + alertas.map(a => '<li>' + a + '</li>').join('') + '</ul>'
-          + '</div>'
-        : '';
-}
-
-function getMRSScoresFromForm() {
-    const scores = {};
-    if (typeof MRS_QUESTIONS === 'undefined') return scores;
-    MRS_QUESTIONS.forEach(q => {
-        const el = document.querySelector('input[name="mrs_' + q.id + '"]:checked');
-        if (el) scores[q.id] = parseInt(el.value);
-    });
-    return scores;
-}
-
-// gerarGuiaPDF(…) — bloco completo de PDF que já te posso enviar se quiseres também
+// gerarGuiaPDF(…) — bloco incluído acima
 </script>
 </body>
 </html>
